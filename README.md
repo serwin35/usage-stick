@@ -1,6 +1,6 @@
 <div align="center">
 
-# quota-stick
+# usage-stick
 
 **Your [Claude](https://docs.anthropic.com/en/docs/claude-code) and [Codex](https://github.com/openai/codex) rate limits, glanceable on a tiny ESP32 stick.**
 
