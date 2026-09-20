@@ -23,9 +23,9 @@ The practical consequence: if you forget the PIN, the token is unrecoverable. Fa
 
 ## Network
 
-The device talks to `api.anthropic.com` over HTTPS, to `status.claude.com` for model health, and (v3, for the news screen) to `raw.githubusercontent.com` for the Anthropic news feed. There's no backend, no telemetry, and no update channel — see [How it works](How-It-Works).
+The device talks to `api.anthropic.com` over HTTPS, to `status.claude.com` for model health, and (v3, for the news screen) to `raw.githubusercontent.com` for the Anthropic news feed. There's no backend, no telemetry, and no update channel — see [How it works](How-It-Works.md).
 
-On the T-Display S3 (v3 firmware) the device also **listens** on your LAN: plain HTTP on port 80, serving the [web panel](Web-Panel), plus mDNS so `claude-usage-stick.local` resolves. Nothing is exposed beyond your network unless you port-forward it yourself — don't.
+On the T-Display S3 (v3 firmware) the device also **listens** on your LAN: plain HTTP on port 80, serving the [web panel](Web-Panel.md), plus mDNS so `usage-stick.local` resolves. Nothing is exposed beyond your network unless you port-forward it yourself — don't.
 
 ## Web panel (T-Display S3, v3)
 
@@ -40,10 +40,10 @@ What that means in practice:
 - **The token is write-only.** No panel endpoint ever returns the token, the WiFi password, or the PIN; the token can only be *replaced*, and replacing it re-requires the PIN.
 - A successful web login while the device sits at the PIN screen also unlocks the screen — it just decrypted the token, which is the same proof the buttons provide.
 
-During setup the device runs an open-ish access point (`ClaudeMonitor-XXXX`, password shown on its screen) that serves a plain HTTP form on `192.168.4.1`. That's a brief window on a local AP with a password, and it closes as soon as you hit Save & Reboot — but it does mean you shouldn't do first-time setup somewhere hostile, like a crowded conference.
+During setup the device runs an open-ish access point (`UsageStick-XXXX`, password shown on its screen) that serves a plain HTTP form on `192.168.4.1`. That's a brief window on a local AP with a password, and it closes as soon as you hit Save & Reboot — but it does mean you shouldn't do first-time setup somewhere hostile, like a crowded conference.
 
 ## Rotating the token
 
-On the T-Display S3 (v3): run `claude setup-token`, open the [web panel](Web-Panel), and paste the new token together with your PIN — no factory reset, WiFi and settings stay put.
+On the T-Display S3 (v3): run `claude setup-token`, open the [web panel](Web-Panel.md), and paste the new token together with your PIN — no factory reset, WiFi and settings stay put.
 
-On every other board: factory reset the device (hold **A+B** on boot, or re-flash on boards that can't), then run `claude setup-token` again and redo [setup](Setup-and-Daily-Use).
+On every other board: factory reset the device (hold **A+B** on boot, or re-flash on boards that can't), then run `claude setup-token` again and redo [setup](Setup-and-Daily-Use.md).

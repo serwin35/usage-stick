@@ -1,6 +1,6 @@
 # Elecrow CrowPanel Advance 3.5" HMI
 
-Part of [Claude Usage Stick](Home). The biggest screen in the lineup — a 3.5" 480×320 IPS HMI panel with capacitive touch and no physical buttons. Pin mapping comes from Elecrow's official LovyanGFX driver and is verified on hardware.
+Part of [Usage Stick](Home.md). The biggest screen in the lineup — a 3.5" 480×320 IPS HMI panel with capacitive touch and no physical buttons. Pin mapping comes from Elecrow's official LovyanGFX driver and is verified on hardware.
 
 ## Specs
 
@@ -18,7 +18,7 @@ Part of [Claude Usage Stick](Home). The biggest screen in the lineup — a 3.5" 
 
 ## Flash
 
-Easiest: open the **[web flasher](https://oauramos.github.io/claude-usage-stick/)** in Chrome, Edge or Firefox, pick this board, and plug it in over USB-C.
+Easiest: open the **[web flasher](https://serwin35.github.io/usage-stick/)** in Chrome, Edge or Firefox, pick this board, and plug it in over USB-C.
 
 From source, with the [PlatformIO CLI](https://platformio.org/install/cli):
 
@@ -44,4 +44,4 @@ There are no physical user buttons, so the two-button UX maps to halves of the t
 
 ---
 
-**CrowPanel Advance 35** · env `crowpanel-adv-35` · [All boards](Supported-Boards) · [Flashing](Flashing) · [Setup and daily use](Setup-and-Daily-Use) · [Troubleshooting](Troubleshooting)
+**CrowPanel Advance 35** · env `crowpanel-adv-35` · [All boards](Supported-Boards.md) · [Flashing](Flashing.md) · [Setup and daily use](Setup-and-Daily-Use.md) · [Troubleshooting](Troubleshooting.md)

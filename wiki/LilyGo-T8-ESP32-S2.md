@@ -1,6 +1,6 @@
 # LilyGo T8 ESP32-S2
 
-Part of [Claude Usage Stick](Home). A bare-bones ESP32-S2 board with the same 1.14" ST7789 panel as the TTGO T-Display, wired over the broken-out FSPI pins. Verified on hardware — display, WiFi provisioning, the encrypted dashboard, and button input all work.
+Part of [Usage Stick](Home.md). A bare-bones ESP32-S2 board with the same 1.14" ST7789 panel as the TTGO T-Display, wired over the broken-out FSPI pins. Verified on hardware — display, WiFi provisioning, the encrypted dashboard, and button input all work.
 
 ## Specs
 
@@ -17,7 +17,7 @@ Part of [Claude Usage Stick](Home). A bare-bones ESP32-S2 board with the same 1.
 
 ## Flash
 
-Easiest: open the **[web flasher](https://oauramos.github.io/claude-usage-stick/)** in Chrome, Edge or Firefox, pick this board, and plug it in over USB-C.
+Easiest: open the **[web flasher](https://serwin35.github.io/usage-stick/)** in Chrome, Edge or Firefox, pick this board, and plug it in over USB-C.
 
 From source, with the [PlatformIO CLI](https://platformio.org/install/cli):
 
@@ -42,4 +42,4 @@ The board exposes only the onboard **BOOT** button (GPIO 0), so the two-button U
 
 ---
 
-**LilyGo T8 ESP32 S2** · env `t8-s2` · [All boards](Supported-Boards) · [Flashing](Flashing) · [Setup and daily use](Setup-and-Daily-Use) · [Troubleshooting](Troubleshooting)
+**LilyGo T8 ESP32 S2** · env `t8-s2` · [All boards](Supported-Boards.md) · [Flashing](Flashing.md) · [Setup and daily use](Setup-and-Daily-Use.md) · [Troubleshooting](Troubleshooting.md)

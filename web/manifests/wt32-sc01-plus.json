@@ -1,5 +1,5 @@
 {
-  "name": "Usage Stick \u2014 LilyGo T-Display S3",
+  "name": "Usage Stick \u2014 WT32-SC01 Plus",
   "version": "3.1.0",
   "new_install_prompt_erase": true,
   "builds": [
@@ -7,19 +7,19 @@
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "../firmware/tdisplay-s3/bootloader.bin",
+          "path": "../firmware/wt32-sc01-plus/bootloader.bin",
           "offset": 0
         },
         {
-          "path": "../firmware/tdisplay-s3/partitions.bin",
+          "path": "../firmware/wt32-sc01-plus/partitions.bin",
           "offset": 32768
         },
         {
-          "path": "../firmware/tdisplay-s3/boot_app0.bin",
+          "path": "../firmware/wt32-sc01-plus/boot_app0.bin",
           "offset": 57344
         },
         {
-          "path": "../firmware/tdisplay-s3/firmware.bin",
+          "path": "../firmware/wt32-sc01-plus/firmware.bin",
           "offset": 65536
         }
       ]

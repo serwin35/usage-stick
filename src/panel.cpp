@@ -34,7 +34,7 @@
 //    the boot phase's stack unwinds, never from inside a handler.
 
 static WebServer s_server(80);
-static char      s_hostname[33] = "claude-usage-stick";
+static char      s_hostname[33] = "usage-stick";
 
 // Sessions: random 128-bit ids in RAM only — a reboot logs everyone out.
 static const uint32_t SESSION_TTL_MS = 24UL * 3600UL * 1000UL;

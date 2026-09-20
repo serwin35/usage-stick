@@ -21,7 +21,7 @@ bool fetchModelStatus(ModelStatus& out) {
         return false;
     }
 
-    https.addHeader("User-Agent", "claude-usage-stick/1.0");
+    https.addHeader("User-Agent", "usage-stick/3.1");
     https.setTimeout(API_TIMEOUT_MS);
     https.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
 

@@ -4,7 +4,7 @@ Two ways to get the firmware onto a board. The web flasher needs nothing install
 
 ## From your browser (recommended)
 
-Open the **[web flasher](https://oauramos.github.io/claude-usage-stick/)**, pick your board, plug it in over USB-C, and click Flash.
+Open the **[web flasher](https://serwin35.github.io/usage-stick/)**, pick your board, plug it in over USB-C, and click Flash.
 
 Requirements:
 
@@ -16,11 +16,11 @@ Firmware images are built from `main` by CI and published alongside the page, so
 
 ## From source
 
-You need the [PlatformIO CLI](https://platformio.org/install/cli). Pick your board's env from [Supported boards](Supported-Boards):
+You need the [PlatformIO CLI](https://platformio.org/install/cli). Pick your board's env from [Supported boards](Supported-Boards.md):
 
 ```bash
-git clone https://github.com/oauramos/claude-usage-stick.git
-cd claude-usage-stick
+git clone https://github.com/serwin35/usage-stick.git
+cd usage-stick
 
 pio run -e <env> -t upload      # firmware
 ```
@@ -33,4 +33,4 @@ CI treats each board independently: a board that fails to build is left out of t
 
 ## After flashing
 
-The device reboots into setup mode and opens its own WiFi access point — continue with [Setup and daily use](Setup-and-Daily-Use).
+The device reboots into setup mode and opens its own WiFi access point — continue with [Setup and daily use](Setup-and-Daily-Use.md).

@@ -19,7 +19,7 @@ static const char SETUP_HTML[] PROGMEM = R"rawhtml(<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>Claude Monitor Setup</title>
+<title>Usage Stick Setup</title>
 <style>
   :root{--bg:#191919;--card:#252525;--border:#3a3a3a;--text:#e0e0e0;
         --dim:#888;--accent:#e8733a;--cyan:#f0a050;--red:#f66}
@@ -55,7 +55,7 @@ static const char SETUP_HTML[] PROGMEM = R"rawhtml(<!DOCTYPE html>
 </head>
 <body>
 <div class="card">
-  <h1>Claude Usage Monitor</h1>
+  <h1>Usage Stick</h1>
   <p class="sub">One-time setup. Token is AES-256 encrypted on device only.</p>
 
   <form id="f">
@@ -116,15 +116,14 @@ static const char SETUP_HTML[] PROGMEM = R"rawhtml(<!DOCTYPE html>
     <div class="field">
       <label for="device_name">Device name (header label)</label>
       <input id="device_name" name="device_name" maxlength="32"
-             placeholder="Claude Monitor" autocomplete="off">
+             placeholder="Usage Stick" autocomplete="off">
     </div>
     </div>
 
     <button type="submit" id="btn">Save & Reboot Device</button>
     <div id="status"></div>
   </form>
-  <div class="footer">Claude Usage Stick · made by
-    <a href="https://github.com/oauramos">@oauramos</a></div>
+  <div class="footer">Usage Stick · <a href="https://github.com/serwin35/usage-stick">source on GitHub</a></div>
 </div>
 
 <script>
@@ -194,7 +193,7 @@ static void handleProvision() {
         // hides that section and leaves them untouched.
         int pollSec = pollStr.isEmpty() ? DEFAULT_POLL_SEC : constrain(pollStr.toInt(), MIN_POLL_SEC, MAX_POLL_SEC);
         int bright  = brightStr.isEmpty() ? DEFAULT_BRIGHTNESS : constrain(brightStr.toInt(), 0, 3);
-        if (nameStr.isEmpty()) nameStr = "Claude Monitor";
+        if (nameStr.isEmpty()) nameStr = "Usage Stick";
         prefs.putInt("poll_sec", pollSec);
         prefs.putInt("brightness", bright);
         prefs.putString("dev_name", nameStr);

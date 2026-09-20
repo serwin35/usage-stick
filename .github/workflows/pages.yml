@@ -24,6 +24,7 @@ jobs:
           - m5stick-cplus
           - m5stick-cplus2
           - tdisplay-s3
+          - wt32-sc01-plus
           - t8-s2
           - crowpanel-adv-35
           - tdisplay-s3-amoled
@@ -47,7 +48,10 @@ jobs:
           restore-keys: pio-${{ runner.os }}-
 
       - name: Install PlatformIO
-        run: pip install platformio
+        # LilyGo-AMOLED-Series invokes esptool's Intel HEX support during its
+        # build; install the module explicitly because newer PlatformIO wheels
+        # no longer pull it into the runner's global Python environment.
+        run: pip install platformio intelhex
 
       - name: Build ${{ matrix.env }}
         run: pio run -e ${{ matrix.env }}

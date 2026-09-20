@@ -44,6 +44,6 @@ void settingsWipeAll();
 void settingsApplyTZ(int32_t tzMin);
 
 // Device name → mDNS/DHCP hostname: lowercase [a-z0-9-], symbol runs collapsed
-// to one dash. Empty or the portal default ("Claude Monitor") falls back to
-// "claude-usage-stick".
+// to one dash. Empty or the legacy portal default ("Claude Monitor") falls
+// back to "usage-stick"; the current "Usage Stick" default slugifies to it.
 void slugifyHostname(const char* devName, char* out, size_t outLen);

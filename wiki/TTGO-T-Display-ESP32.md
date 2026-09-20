@@ -1,6 +1,6 @@
 # TTGO T-Display ESP32
 
-Part of [Claude Usage Stick](Home). The classic LilyGo/TTGO T-Display — an original ESP32 with a 1.14" ST7789 panel over 4-wire SPI and two front buttons.
+Part of [Usage Stick](Home.md). The classic LilyGo/TTGO T-Display — an original ESP32 with a 1.14" ST7789 panel over 4-wire SPI and two front buttons.
 
 ## Specs
 
@@ -16,7 +16,7 @@ Part of [Claude Usage Stick](Home). The classic LilyGo/TTGO T-Display — an ori
 
 ## Flash
 
-Easiest: open the **[web flasher](https://oauramos.github.io/claude-usage-stick/)** in Chrome, Edge or Firefox, pick this board, and plug it in over USB-C.
+Easiest: open the **[web flasher](https://serwin35.github.io/usage-stick/)** in Chrome, Edge or Firefox, pick this board, and plug it in over USB-C.
 
 From source, with the [PlatformIO CLI](https://platformio.org/install/cli):
 
@@ -39,4 +39,4 @@ pio run -e tdisplay-esp32 -t upload     # firmware
 
 ---
 
-**TTGO T Display ESP32** · env `tdisplay-esp32` · [All boards](Supported-Boards) · [Flashing](Flashing) · [Setup and daily use](Setup-and-Daily-Use) · [Troubleshooting](Troubleshooting)
+**TTGO T Display ESP32** · env `tdisplay-esp32` · [All boards](Supported-Boards.md) · [Flashing](Flashing.md) · [Setup and daily use](Setup-and-Daily-Use.md) · [Troubleshooting](Troubleshooting.md)

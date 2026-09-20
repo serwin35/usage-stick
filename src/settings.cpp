@@ -97,6 +97,6 @@ void slugifyHostname(const char* devName, char* out, size_t outLen) {
     while (n > 0 && out[n - 1] == '-') n--;
     out[n] = '\0';
     if (n == 0 || strcmp(out, "claude-monitor") == 0) {
-        strlcpy(out, "claude-usage-stick", outLen);
+        strlcpy(out, "usage-stick", outLen);
     }
 }

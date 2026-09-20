@@ -8,10 +8,10 @@ A fork of [claude-usage-stick](https://github.com/oauramos/claude-usage-stick) w
 
 [![Web Flasher](https://img.shields.io/badge/⚡_web_flasher-flash_from_your_browser-D97757?style=flat-square)](https://serwin35.github.io/usage-stick/)
 [![Wiki](https://img.shields.io/badge/docs-wiki-4c8eda?style=flat-square)](wiki/)
-[![Boards](https://img.shields.io/badge/boards-8_supported-44cc11?style=flat-square)](wiki/Supported-Boards.md)
+[![Boards](https://img.shields.io/badge/boards-9_supported-44cc11?style=flat-square)](wiki/Supported-Boards.md)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 
-<a href="https://serwin35.github.io/usage-stick/"><img src="assets/hero.gif" width="820" alt="Claude Usage Stick — a LilyGo T-Display S3 turning slowly, its screen showing the 5-hour and 7-day usage bars, reset countdowns and the four model mascots"/></a>
+<a href="https://serwin35.github.io/usage-stick/"><img src="assets/hero.gif" width="820" alt="Usage Stick — a LilyGo T-Display S3 turning slowly, its screen showing the 5-hour and 7-day usage bars, reset countdowns and the four model mascots"/></a>
 
 ## [⚡ Flash your ESP32 — right from your browser](https://serwin35.github.io/usage-stick/)
 
@@ -40,7 +40,7 @@ Codex is optional: paste a Codex CLI `refresh_token` (`rt.…` from `~/.codex/au
 
 **✨ New in Dust (v3 — [T-Display S3](wiki/LilyGo-T-Display-S3.md) and [M5StickC Plus](wiki/M5StickC-Plus.md))**
 
-- **[Web control panel](wiki/Web-Panel.md)** — the stick serves its own settings page at `http://claude-usage-stick.local`: every setting, WiFi changes and factory reset from any browser on your LAN. Logging in with the PIN also unlocks the screen
+- **[Web control panel](wiki/Web-Panel.md)** — the stick serves its own settings page at `http://usage-stick.local`: every setting, WiFi changes and factory reset from any browser on your LAN. Logging in with the PIN also unlocks the screen
 - **Token rotation without a reset** — paste a fresh `claude setup-token`, confirmed with your PIN and verified live against the API; the stored token is write-only
 - **Screen modes** — static, carousel (dwell 5–30 s) or desk clock; Button A steps through every screen
 - **7-day usage chart** — one sample every 30 minutes, persisted on-device; time spent off shows as honest gaps

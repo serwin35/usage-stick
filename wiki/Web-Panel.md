@@ -1,6 +1,6 @@
 # Web panel
 
-*✨ Dust (v3) on the [LilyGo T-Display S3](LilyGo-T-Display-S3) and [M5StickC Plus](M5StickC-Plus). Other boards will get it as they migrate to v3.*
+*✨ Dust (v3) on the [LilyGo T-Display S3](LilyGo-T-Display-S3.md) and [M5StickC Plus](M5StickC-Plus.md). Other boards will get it as they migrate to v3.*
 
 Once the device is on your WiFi, it serves its own control panel to any browser on the same network. Everything you'd want to change after setup lives there — no re-flash, no factory reset, no serial console.
 
@@ -9,7 +9,7 @@ Once the device is on your WiFi, it serves its own control panel to any browser 
 Two ways:
 
 - The dashboard **header alternates** between the device's name and its address, e.g. `http://192.168.2.136` — shown **only after unlock**, deliberately: the locked screen never displays the address, so a passer-by isn't handed the login endpoint.
-- The mDNS name **`http://claude-usage-stick.local`** works from macOS, iOS, Windows and most Linux — no router config needed. (Android's `.local` support is patchy; use the IP there.) If you set a device name during setup, the hostname is that name slugified — `Desk Stick` becomes `desk-stick.local`.
+- The mDNS name **`http://usage-stick.local`** works from macOS, iOS, Windows and most Linux — no router config needed. (Android's `.local` support is patchy; use the IP there.) If you set a device name during setup, the hostname is that name slugified — `Desk Stick` becomes `desk-stick.local`.
 
 ## Logging in
 
@@ -18,7 +18,7 @@ The panel's password is the **same 4-digit PIN** you enter on the device buttons
 Two things worth knowing:
 
 - **Logging in also unlocks the device.** If the stick is sitting at its PIN screen, a successful browser login decrypts the token and the screen jumps straight to the dashboard — typing the PIN in a browser beats cycling digits with two buttons.
-- Wrong attempts slow down exponentially (HTTP 429) but **never wipe the device** — the 10-attempt wipe only counts PINs typed on the physical buttons. Sessions live in RAM: a reboot logs everyone out, and an idle session expires after 24 h. The full threat model is in [Security](Security#web-panel-t-display-s3-v3).
+- Wrong attempts slow down exponentially (HTTP 429) but **never wipe the device** — the 10-attempt wipe only counts PINs typed on the physical buttons. Sessions live in RAM: a reboot logs everyone out, and an idle session expires after 24 h. The full threat model is in [Security](Security.md#web-panel-t-display-s3-v3).
 
 ## What's on it
 
@@ -27,7 +27,7 @@ Two things worth knowing:
 | **Usage** | The live dashboard mirrored in the browser — bars, reset countdowns, model mascots — plus a **Refresh now** button |
 | **Device** | Firmware version, hostname, IP, WiFi signal, uptime, free heap, and whether the screen is locked |
 | **Display & refresh** | Brightness, refresh interval (30 s – 5 min), **timezone** (GMT±, feeds the clock screen and the chart's day markers), device name, flip 180° |
-| **Screens** | The [display mode](The-UI#what-dust-adds) — static / carousel / clock — carousel dwell time, which screens rotate, and which model mascots render |
+| **Screens** | The [display mode](The-UI.md#what-dust-adds) — static / carousel / clock — carousel dwell time, which screens rotate, and which model mascots render |
 | **7-day history** | The same chart the device draws, rendered from the on-device history |
 | **Anthropic news** | The headlines the news screen shows |
 | **Claude token** | Replace the stored token — see below |

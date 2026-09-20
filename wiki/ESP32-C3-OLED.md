@@ -1,9 +1,9 @@
 # ESP32-C3-OLED
 
-Part of [Claude Usage Stick](Home). The smallest and cheapest way to run the firmware — a breadboard-friendly ESP32-C3 module with a 0.42" OLED. It has no built-in buttons, so you bring your own (two tactile buttons or capacitive touch pads).
+Part of [Usage Stick](Home.md). The smallest and cheapest way to run the firmware — a breadboard-friendly ESP32-C3 module with a 0.42" OLED. It has no built-in buttons, so you bring your own (two tactile buttons or capacitive touch pads).
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/oauramos/claude-usage-stick/main/assets/esp32-c3-oled.jpg" width="400" alt="ESP32-C3-OLED running Claude Usage Stick">
+  <img src="https://raw.githubusercontent.com/serwin35/usage-stick/main/assets/esp32-c3-oled.jpg" width="400" alt="ESP32-C3-OLED running Usage Stick">
 </p>
 
 ## Specs
@@ -20,7 +20,7 @@ Part of [Claude Usage Stick](Home). The smallest and cheapest way to run the fir
 
 ## Flash
 
-Easiest: open the **[web flasher](https://oauramos.github.io/claude-usage-stick/)** in Chrome, Edge or Firefox, pick this board, and plug it in over USB-C.
+Easiest: open the **[web flasher](https://serwin35.github.io/usage-stick/)** in Chrome, Edge or Firefox, pick this board, and plug it in over USB-C.
 
 From source, with the [PlatformIO CLI](https://platformio.org/install/cli):
 
@@ -56,7 +56,7 @@ Wire each button between the GPIO pin and 3.3 V. When the button is open the int
 Any module that outputs a logic-HIGH signal when touched works as a drop-in replacement (e.g. TTP223-based pads). Wire the sensor's output to the GPIO pin and its power pins to 3.3 V and GND. The signal polarity and pull-down behaviour are identical to Option A.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/oauramos/claude-usage-stick/main/assets/esp32-c3-oled-touch-buttons.jpg" width="500" alt="ESP32-C3-OLED wired with capacitive touch sensors on GPIO 3 and GPIO 7">
+  <img src="https://raw.githubusercontent.com/serwin35/usage-stick/main/assets/esp32-c3-oled-touch-buttons.jpg" width="500" alt="ESP32-C3-OLED wired with capacitive touch sensors on GPIO 3 and GPIO 7">
 </p>
 
 ## Controls
@@ -74,4 +74,4 @@ Any module that outputs a logic-HIGH signal when touched works as a drop-in repl
 
 ---
 
-**ESP32 C3 OLED** · env `esp32c3-oled` · [All boards](Supported-Boards) · [Flashing](Flashing) · [Setup and daily use](Setup-and-Daily-Use) · [Troubleshooting](Troubleshooting)
+**ESP32 C3 OLED** · env `esp32c3-oled` · [All boards](Supported-Boards.md) · [Flashing](Flashing.md) · [Setup and daily use](Setup-and-Daily-Use.md) · [Troubleshooting](Troubleshooting.md)

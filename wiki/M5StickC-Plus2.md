@@ -1,6 +1,6 @@
 # M5StickC Plus2
 
-Part of [Claude Usage Stick](Home). The successor to the M5StickC Plus — same form factor, newer ESP32-PICO-V3-02 module, bigger battery.
+Part of [Usage Stick](Home.md). The successor to the M5StickC Plus — same form factor, newer ESP32-PICO-V3-02 module, bigger battery.
 
 ## Specs
 
@@ -16,7 +16,7 @@ Part of [Claude Usage Stick](Home). The successor to the M5StickC Plus — same 
 
 ## Flash
 
-Easiest: open the **[web flasher](https://oauramos.github.io/claude-usage-stick/)** in Chrome, Edge or Firefox, pick this board, and plug it in over USB-C.
+Easiest: open the **[web flasher](https://serwin35.github.io/usage-stick/)** in Chrome, Edge or Firefox, pick this board, and plug it in over USB-C.
 
 From source, with the [PlatformIO CLI](https://platformio.org/install/cli):
 
@@ -39,4 +39,4 @@ pio run -e m5stick-cplus2 -t upload     # firmware
 
 ---
 
-**M5StickC Plus2** · env `m5stick-cplus2` · [All boards](Supported-Boards) · [Flashing](Flashing) · [Setup and daily use](Setup-and-Daily-Use) · [Troubleshooting](Troubleshooting)
+**M5StickC Plus2** · env `m5stick-cplus2` · [All boards](Supported-Boards.md) · [Flashing](Flashing.md) · [Setup and daily use](Setup-and-Daily-Use.md) · [Troubleshooting](Troubleshooting.md)

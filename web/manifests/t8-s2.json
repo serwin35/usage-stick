@@ -1,5 +1,5 @@
 {
-  "name": "Claude Usage Stick \u2014 LilyGo T8 ESP32-S2",
+  "name": "Usage Stick \u2014 LilyGo T8 ESP32-S2",
   "version": "1.0.0",
   "new_install_prompt_erase": true,
   "builds": [

@@ -90,7 +90,7 @@ static bool connectWiFi(const char* ssid, const char* pass) {
 static void makeApCreds(char* apName, size_t nameLen, char* apPass, size_t passLen) {
     uint8_t mac[6];
     esp_efuse_mac_get_default(mac);
-    snprintf(apName, nameLen, "ClaudeMonitor-%02X%02X", mac[4], mac[5]);
+    snprintf(apName, nameLen, "UsageStick-%02X%02X", mac[4], mac[5]);
 
 #ifdef BOARD_ESP32C3_OLED
     // No readable display during setup — use open AP so password isn't needed

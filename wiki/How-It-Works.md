@@ -11,22 +11,22 @@ The whole device is a loop: ask the Anthropic API a trivial question, read the r
 3. It draws those percentages as bars, along with the reset countdowns.
 4. It sleeps until the next poll — the interval is configurable from 30 s to 5 min.
 
-On [Mango](The-UI) firmware the device also fetches model health from [status.claude.com](https://status.claude.com) and draws the Haiku / Sonnet / Opus / Fable mascots.
+On [Mango](The-UI.md) firmware the device also fetches model health from [status.claude.com](https://status.claude.com) and draws the Haiku / Sonnet / Opus / Fable mascots.
 
-On [Dust](The-UI#what-dust-adds) firmware (v3) two more things happen:
+On [Dust](The-UI.md#what-dust-adds) firmware (v3) two more things happen:
 
 - Every successful poll drops one sample into a **7-day history ring** (one slot per 30 minutes, ~0.7 KB) persisted on the device's own flash — that's what the chart screen and the panel's chart draw. Time the device spends off shows up as gaps, honestly.
 - Every 6 hours it streams the **Anthropic news feed** from `raw.githubusercontent.com`, reads just the first five headlines (~10 KB of a ~200 KB file) and hangs up.
 
 ## Where your token goes
 
-Nowhere except Anthropic. There is no backend, no telemetry, and no cloud service in the middle — the device talks straight to `api.anthropic.com` over HTTPS. The token itself is stored encrypted on the device's own flash; see [Security](Security).
+Nowhere except Anthropic. There is no backend, no telemetry, and no cloud service in the middle — the device talks straight to `api.anthropic.com` over HTTPS. The token itself is stored encrypted on the device's own flash; see [Security](Security.md).
 
 ## Rate-limit headers and your plan
 
 The unified 5h/7d headers are what Claude Code subscriptions (Pro and Max) return. **Enterprise and API-billed accounts do not emit them** — the request succeeds with HTTP 200, but the headers simply aren't there, and the device can't show usage.
 
-If your device reports `no_usage_h_200`, that's what happened: the token is valid, but the plan behind it doesn't publish unified usage. You need a Pro or Max token. See [Troubleshooting](Troubleshooting#the-device-shows-no_usage_h_200).
+If your device reports `no_usage_h_200`, that's what happened: the token is valid, but the plan behind it doesn't publish unified usage. You need a Pro or Max token. See [Troubleshooting](Troubleshooting.md#the-device-shows-no_usage_h_200).
 
 ## Optional local proxy
 

@@ -1,6 +1,6 @@
 # LilyGo T-Display S3 AMOLED (1.91")
 
-Part of [Claude Usage Stick](Home). The AMOLED variant of the T-Display S3 — a long, narrow 240×536 RM67162 panel. One build covers every 1.91" revision: the panel variant (H712 / H713 / H705 / H681 / H717) is auto-detected at runtime by the LilyGo_AMOLED library, touch and non-touch, V1.0/V2.0/Black Shell alike.
+Part of [Usage Stick](Home.md). The AMOLED variant of the T-Display S3 — a long, narrow 240×536 RM67162 panel. One build covers every 1.91" revision: the panel variant (H712 / H713 / H705 / H681 / H717) is auto-detected at runtime by the LilyGo_AMOLED library, touch and non-touch, V1.0/V2.0/Black Shell alike.
 
 ## Specs
 
@@ -17,7 +17,7 @@ Part of [Claude Usage Stick](Home). The AMOLED variant of the T-Display S3 — a
 
 ## Flash
 
-Easiest: open the **[web flasher](https://oauramos.github.io/claude-usage-stick/)** in Chrome, Edge or Firefox, pick this board, and plug it in over USB-C.
+Easiest: open the **[web flasher](https://serwin35.github.io/usage-stick/)** in Chrome, Edge or Firefox, pick this board, and plug it in over USB-C.
 
 From source, with the [PlatformIO CLI](https://platformio.org/install/cli):
 
@@ -25,7 +25,7 @@ From source, with the [PlatformIO CLI](https://platformio.org/install/cli):
 pio run -e tdisplay-s3-amoled -t upload     # firmware
 ```
 
-> This env is for the **1.91" AMOLED variant**. For the regular LCD version, use [`tdisplay-s3`](LilyGo-T-Display-S3).
+> This env is for the **1.91" AMOLED variant**. For the regular LCD version, use [`tdisplay-s3`](LilyGo-T-Display-S3.md).
 
 ## Controls
 
@@ -41,4 +41,4 @@ pio run -e tdisplay-s3-amoled -t upload     # firmware
 
 ---
 
-**LilyGo T Display S3 AMOLED** · env `tdisplay-s3-amoled` · [All boards](Supported-Boards) · [Flashing](Flashing) · [Setup and daily use](Setup-and-Daily-Use) · [Troubleshooting](Troubleshooting)
+**LilyGo T Display S3 AMOLED** · env `tdisplay-s3-amoled` · [All boards](Supported-Boards.md) · [Flashing](Flashing.md) · [Setup and daily use](Setup-and-Daily-Use.md) · [Troubleshooting](Troubleshooting.md)

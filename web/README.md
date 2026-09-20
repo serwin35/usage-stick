@@ -1,6 +1,6 @@
 # Web flasher
 
-The page at **https://oauramos.github.io/claude-usage-stick/** — flash any supported board
+The page at **https://serwin35.github.io/usage-stick/** — flash any supported board
 from Chrome or Edge over Web Serial, no toolchain required.
 
 ## Layout

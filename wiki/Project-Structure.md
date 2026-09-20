@@ -40,9 +40,9 @@ Edit the file in `wiki/`, open a PR, and the wiki updates on merge. Editing a pa
 python3 web/src/build.py
 ```
 
-The board list, firmware versions, and the CSS 3D board models are data inside `web/src/build.py`. Commit the regenerated files with your source change. More detail in [`web/README.md`](https://github.com/oauramos/claude-usage-stick/blob/main/web/README.md).
+The board list, firmware versions, and the CSS 3D board models are data inside `web/src/build.py`. Commit the regenerated files with your source change. More detail in [`web/README.md`](https://github.com/serwin35/usage-stick/blob/main/web/README.md).
 
-The device's own [web panel](Web-Panel) works the same way: edit `web/panel/panel.html`, run `python3 web/panel/build.py`, and commit the regenerated `src/panel_html.h` (the page ships inside the firmware, gzipped).
+The device's own [web panel](Web-Panel.md) works the same way: edit `web/panel/panel.html`, run `python3 web/panel/build.py`, and commit the regenerated `src/panel_html.h` (the page ships inside the firmware, gzipped).
 
 ## Adding a board
 
@@ -50,8 +50,8 @@ Roughly what's involved:
 
 1. **`platformio.ini`** — a new env with the board's platform, display driver flags, and pin mapping.
 2. **`src/hal.cpp`** — a branch for the board's display init, buttons, battery ADC, and backlight, behind a `BOARD_*` define.
-3. **`src/ui.cpp`** — usually nothing, if the board fits an existing [display tier](The-UI#display-tiers). A new resolution class means a new tier.
-4. **`wiki/`** — a board guide page, plus a row in [Supported boards](Supported-Boards).
+3. **`src/ui.cpp`** — usually nothing, if the board fits an existing [display tier](The-UI.md#display-tiers). A new resolution class means a new tier.
+4. **`wiki/`** — a board guide page, plus a row in [Supported boards](Supported-Boards.md).
 5. **`web/src/build.py`** — an entry in `BOARDS` and a 3D model in `BOARDS3D`, so the board appears in the flasher.
 6. **`.github/workflows/pages.yml`** — add the env to the build matrix.
 
@@ -59,4 +59,4 @@ Pin mappings should be verified on real hardware before being merged — several
 
 ## Contributing
 
-PRs are welcome, especially board support and photos of real builds. Open an [issue](https://github.com/oauramos/claude-usage-stick/issues) first if you're planning something large.
+PRs are welcome, especially board support and photos of real builds. Open an [issue](https://github.com/serwin35/usage-stick/issues) first if you're planning something large.

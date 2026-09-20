@@ -16,11 +16,11 @@ If your Firefox is older than 151, update it — Web Serial landed there recentl
 
 ### My board says "build pending"
 
-Its firmware image hasn't been published by CI. Build it from source instead — see [Flashing](Flashing#from-source).
+Its firmware image hasn't been published by CI. Build it from source instead — see [Flashing](Flashing.md#from-source).
 
 ## WiFi and setup
 
-### I can't find the `ClaudeMonitor-XXXX` network
+### I can't find the `UsageStick-XXXX` network
 
 Give the device 10–15 seconds after boot. If it never appears, it's probably already configured — factory reset it (hold **A+B** during boot) to return it to setup mode.
 
@@ -38,7 +38,7 @@ ESP32 radios are **2.4 GHz only**. If your router advertises one name for both b
 
 The request succeeded (HTTP 200), but the response carried **no unified usage headers**. This means the token is valid and the account is fine — but the plan behind it doesn't publish 5h/7d usage.
 
-**Enterprise and API-billed accounts don't emit these headers.** The device needs a token from a **Claude Pro or Max** subscription. Generate one with `claude setup-token` while signed into the subscription account, then redo [setup](Setup-and-Daily-Use).
+**Enterprise and API-billed accounts don't emit these headers.** The device needs a token from a **Claude Pro or Max** subscription. Generate one with `claude setup-token` while signed into the subscription account, then redo [setup](Setup-and-Daily-Use.md).
 
 ### Usage stays at 0%
 
@@ -52,7 +52,7 @@ Check the WiFi icon in the header. If the signal dropped, the device retries on 
 
 ### I forgot my PIN
 
-There's no recovery — that's the design, not an oversight. The PIN is never stored, so nothing on the device can verify or reveal it. Factory reset (hold **A+B** on boot, or re-flash on boards without that combo) and set it up again with a new token. See [Security](Security).
+There's no recovery — that's the design, not an oversight. The PIN is never stored, so nothing on the device can verify or reveal it. Factory reset (hold **A+B** on boot, or re-flash on boards without that combo) and set it up again with a new token. See [Security](Security.md).
 
 ### The device wiped itself
 
@@ -60,4 +60,4 @@ Ten consecutive wrong PIN attempts trigger a full credential wipe. Set it up aga
 
 ## Still stuck?
 
-Open an [issue](https://github.com/oauramos/claude-usage-stick/issues) with your board, the firmware version, and what the screen shows.
+Open an [issue](https://github.com/serwin35/usage-stick/issues) with your board, the firmware version, and what the screen shows.

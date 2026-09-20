@@ -71,6 +71,14 @@ BOARDS3D = {
         back=(el("shield", 55, 35, 40, 30) + el("antz", 12, 12, 26, 10)
               + el("usbp", 4, 43, 8, 14) + pins(140, [20, 34, 48, 62, 76])),
     ),
+    "wt32-sc01-plus": dict(
+        w=150, h=100, d=12, pcb="#2b2620", pcbe="#191510",
+        front=(el("scr", 10, 8, 130, 84)
+               + el("bar", 24, 26, 88, 7) + el("bar d2", 24, 42, 58, 7)
+               + pdots(24, 72, 4, 6, 12)),
+        back=(el("shield", 55, 35, 40, 30) + el("antz", 12, 12, 26, 10)
+              + el("usbp", 4, 43, 8, 14) + pins(140, [20, 34, 48, 62, 76])),
+    ),
     "tdisplay-s3-amoled": dict(
         w=160, h=44, d=8, pcb="#26221c", pcbe="#17130e",
         front=(el("scr", 26, 6, 110, 32)
@@ -102,11 +110,12 @@ BOARDS3D = {
 
 BOARDS = [
     # env, name, mcu, display, firmware tag (label, is_mango), chip family, fw version
-    ("m5stick-cplus", "M5StickC Plus", "ESP32-PICO", '1.14&Prime; 240&times;135', ("&#10024; Dust &middot; tier S", True), "ESP32", "3.0.3"),
+    ("m5stick-cplus", "M5StickC Plus", "ESP32-PICO", '1.14&Prime; 240&times;135', ("&#10024; Dust &middot; tier S", True), "ESP32", "3.1.0"),
     ("m5stick-cplus2", "M5StickC Plus2", "ESP32-PICO-V3", '1.14&Prime; 240&times;135', ("Clarity v1", False), "ESP32", "1.0.0"),
-    ("tdisplay-s3", "LilyGo T-Display S3", "ESP32-S3", '1.9&Prime; 320&times;170', ("&#10024; Dust &middot; tier L", True), "ESP32-S3", "3.0.3"),
+    ("tdisplay-s3", "LilyGo T-Display S3", "ESP32-S3", '1.9&Prime; 320&times;170', ("&#10024; Dust &middot; tier L", True), "ESP32-S3", "3.1.0"),
     ("t8-s2", "LilyGo T8 ESP32-S2", "ESP32-S2", '1.14&Prime; 135&times;240', ("Clarity v1", False), "ESP32-S2", "1.0.0"),
     ("crowpanel-adv-35", "CrowPanel Advance 3.5&Prime;", "ESP32-S3", '3.5&Prime; 480&times;320 touch', ("Clarity v1", False), "ESP32-S3", "1.0.0"),
+    ("wt32-sc01-plus", "WT32-SC01 Plus", "ESP32-S3", '3.5&Prime; 480&times;320 touch', ("&#10024; Dust &middot; tier XL", True), "ESP32-S3", "3.1.0"),
     ("tdisplay-s3-amoled", "T-Display S3 AMOLED", "ESP32-S3", '1.91&Prime; 240&times;536', ("Clarity v1", False), "ESP32-S3", "1.0.0"),
     ("tdisplay-esp32", "TTGO T-Display", "ESP32", '1.14&Prime; 135&times;240', ("Clarity v1", False), "ESP32", "1.0.0"),
     ("esp32c3-oled", "ESP32-C3-OLED", "ESP32-C3", '0.42&Prime; 72&times;40 OLED', ("Clarity v1", False), "ESP32-C3", "1.0.0"),
@@ -259,7 +268,7 @@ HEAD_TOP = '''<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Flash the Claude Usage Stick firmware to your ESP32 board straight from the browser — no toolchain, no drivers, no cloned repo.">
+<meta name="description" content="Flash the Usage Stick firmware to your ESP32 board straight from the browser — no toolchain, no drivers, no cloned repo.">
 <link rel="icon" type="image/svg+xml" href="FAVICON">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -271,7 +280,7 @@ BOOTLOADER_OFFSET = {"ESP32": 0x1000, "ESP32-S2": 0x1000, "ESP32-S3": 0x0, "ESP3
 def manifest(env, name, chip, version):
     boot = BOOTLOADER_OFFSET[chip]
     return {
-        "name": f"Claude Usage Stick — {name}",
+        "name": f"Usage Stick — {name}",
         "version": version,
         "new_install_prompt_erase": True,
         "builds": [{
@@ -302,7 +311,7 @@ def build():
         html = html.replace(mock, real)
 
     # lift the <title> + font link into a proper <head>, append esp-web-tools loader
-    title_line = '<title>Claude Usage Stick Flasher</title>'
+    title_line = '<title>Usage Stick Flasher</title>'
     fonts_line = next(l for l in html.splitlines() if "fonts.googleapis.com/css2" in l)
     body = html.replace(title_line + "\n", "").replace(fonts_line + "\n", "")
     head = (HEAD_TOP.replace("FAVICON", clawd_favicon())

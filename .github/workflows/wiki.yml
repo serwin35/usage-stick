@@ -30,8 +30,8 @@ jobs:
           # GitHub only creates the .wiki.git repo once a first page exists, so a
           # brand-new wiki has to be initialised by hand before this can push.
           if ! git clone -q "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git" wiki-repo; then
-            echo "::error::Wiki repository not found. Open https://github.com/${GITHUB_REPOSITORY}/wiki, click 'Create the first page', save anything, then re-run this workflow."
-            exit 1
+            echo "::warning::Repository wiki is not initialised; documentation remains available in wiki/ on the main branch."
+            exit 0
           fi
 
           # mirror wiki/ exactly: drop pages that no longer exist upstream
