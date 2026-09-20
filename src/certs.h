@@ -1,6 +1,7 @@
 #pragma once
 
-// Root CA bundle for all HTTPS endpoints (api.anthropic.com, status.claude.com).
+// Root CA bundle for all HTTPS endpoints (api.anthropic.com, status.claude.com,
+// chatgpt.com, auth.openai.com).
 // Multiple roots so the device survives a server-side CA rotation:
 //   GlobalSign Root CA      — current api.anthropic.com anchor (expires 2028-01-28)
 //   ISRG Root X1            — Let's Encrypt, current status.claude.com anchor (expires 2035-06-04)

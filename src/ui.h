@@ -1,10 +1,12 @@
 #pragma once
 #include "api.h"
+#include "codex.h"
 #ifdef MANGO_UI
 #include "status.h"
 #endif
 #include "history.h"   // self-guarded: empty on non-S3 boards
 #include "news.h"
+#include "calendar.h"
 
 void uiInit();
 void uiBootProgress(int percent, const char* label);
@@ -32,9 +34,11 @@ void uiSetModelMask(uint8_t mask);
 void uiHeaderAlternate();
 // v3 carousel screens — all sprite-rendered, full-push, flicker-free.
 void uiChartScreen(const HistSlot* slots, uint32_t newestEpoch,
-                   unsigned long lastFetchMs, int rssi);
+                   unsigned long lastFetchMs, int rssi, bool codex = false);
 void uiNewsScreen(const NewsState& news, unsigned long lastFetchMs, int rssi);
 void uiClockScreen(const UsageData& data, unsigned long lastFetchMs, int rssi);
+void uiCalendarScreen(const CalState& cal, unsigned long lastFetchMs, int rssi);
+void uiCodexDashboard(const CodexUsage& data, unsigned long lastFetchMs, int rssi);
 #endif
 #ifdef MANGO_UI
 // Latest model health for the dashboard's mascot row; cached until the next call.

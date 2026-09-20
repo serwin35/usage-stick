@@ -31,9 +31,11 @@
 #include "screens.h"
 #include "history.h"
 #include "news.h"
+#include "calendar.h"
 #ifdef MANGO_UI
 #include "status.h"
 #endif
+#include "codex.h"
 
 Settings      g_settings;
 UsageData     g_usage;
@@ -41,6 +43,8 @@ UsageData     g_usage;
 ModelStatus   g_models = {true, true, true, true, false};
 #endif
 char          g_token[256];
+char          g_codexCred[CODEX_REFRESH_MAX];
+CodexUsage    g_codex;
 bool          g_unlocked = false;
 unsigned long g_lastFetchMs = 0;
 
@@ -109,17 +113,57 @@ static void syncTime() {
     getLocalTime(&t, 5000);
 }
 
+#ifdef BOARD_WT32_SC01_PLUS
+// One beep per crossing into the danger zone, not one per poll — armed again
+// once usage drops back below a lower watermark (a new 5h window, most likely).
+#define ALERT_THRESHOLD 0.0f   // TEMP: forces the beep on the next refresh to test the speaker
+#define ALERT_REARM     85.0f
+static void checkUsageAlert() {
+    static bool armed = true;
+    if (!g_usage.ok) return;
+    if (armed && g_usage.h5 >= ALERT_THRESHOLD) {
+        halBeep();
+        armed = false;
+    } else if (g_usage.h5 < ALERT_REARM) {
+        armed = true;
+    }
+}
+#endif
+
 // ── Fetch + draw ───────────────────────────────────────
 static void refresh() {
     if (WiFi.status() != WL_CONNECTED) {
         connectWiFi(g_settings.ssid, g_settings.wifipass);
     }
     fetchUsage(g_token, g_usage);
+#ifdef DUST_UI
+    if (g_codexCred[0]) {
+        fetchCodexUsage(g_codexCred, sizeof(g_codexCred), g_codex);
+        if (g_codex.ok) historyRecordCodex(g_codex.hasH5 ? g_codex.h5 : 0,
+                                           g_codex.hasD7 ? g_codex.d7 : 0);
+        if (g_codex.credRotated) {
+            EncryptedBlob nb;
+            if (recryptToken(g_codexCred, nb)) {
+                settingsPutBlob("cblob", &nb, sizeof(nb));
+                g_settings.codexBlob    = nb;
+                g_settings.hasCodexBlob = true;
+            }
+        }
+    } else {
+        memset(&g_codex, 0, sizeof(g_codex));
+        strlcpy(g_codex.error, "no_codex_token", sizeof(g_codex.error));
+    }
+#endif
 #ifdef MANGO_UI
     fetchModelStatus(g_models);   // failure keeps last-known state
     uiSetModelStatus(g_models);
 #endif
     g_lastFetchMs = millis();
+#ifdef BOARD_WT32_SC01_PLUS
+    // TODO: re-enable once halBeep()'s I2S driver is fixed — it hangs the board
+    // (legacy <I2S.h> blocking write() never returns with these pins/mode).
+    // checkUsageAlert();
+#endif
 #ifdef DUST_UI
     screensOnData();   // records history + redraws whichever screen shows it
 #else
@@ -139,7 +183,12 @@ static void unlockPhase(int progressPct) {
         char pin[9];
         if (!enterPin(pin, sizeof(pin))) { webUnlocked = true; break; }
 
-        if (decryptToken(g_settings.blob, pin, g_token, sizeof(g_token))) break;
+        if (decryptToken(g_settings.blob, pin, g_token, sizeof(g_token))) {
+            g_codexCred[0] = '\0';
+            if (g_settings.hasCodexBlob)
+                decryptToken(g_settings.codexBlob, pin, g_codexCred, sizeof(g_codexCred));
+            break;
+        }
 
         attempts++;
         if (attempts >= MAX_PIN_ATTEMPTS) {
@@ -401,6 +450,7 @@ void loop() {
 #ifdef DUST_UI
     screensTick();                        // carousel dwell + 10s header beat + clock minute
     if (newsTick()) screensOnNews();      // blocks 2-5s only when a fetch is due
+    if (calendarTick()) screensOnCalendar();   // blocks for the .ics fetch, every 15min
 #else
     static unsigned long lastRedraw = 0;
     if (millis() - lastRedraw > 10000) {

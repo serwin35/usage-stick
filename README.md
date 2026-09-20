@@ -1,8 +1,10 @@
 <div align="center">
 
-# Claude Usage Stick
+# quota-stick
 
-**Your [Claude Code](https://docs.anthropic.com/en/docs/claude-code) rate limits, glanceable on a tiny ESP32 stick.**
+**Your [Claude](https://docs.anthropic.com/en/docs/claude-code) and [Codex](https://github.com/openai/codex) rate limits, glanceable on a tiny ESP32 stick.**
+
+A fork of [claude-usage-stick](https://github.com/oauramos/claude-usage-stick) with Codex 5-hour / 7-day / Extra Usage screens (same windows [Usage4Claude](https://github.com/f-is-h/Usage4Claude) shows in the macOS menu bar). Tokens stay on the device, PIN-encrypted — nothing in this repo is a credential.
 
 [![Web Flasher](https://img.shields.io/badge/⚡_web_flasher-flash_from_your_browser-D97757?style=flat-square)](https://oauramos.github.io/claude-usage-stick/)
 [![Wiki](https://img.shields.io/badge/docs-wiki-4c8eda?style=flat-square)](https://github.com/oauramos/claude-usage-stick/wiki)
@@ -15,19 +17,22 @@
 
 *No toolchain, no drivers, no clone — just Chrome, Edge or Firefox and a USB-C cable.*
 
-*5-hour & 7-day usage windows · reset countdowns · model health mascots · PIN-encrypted token · web control panel · screen carousel with 7-day chart, Anthropic news & clock (✨ Dust, v3)*
+*Claude + Codex 5-hour & 7-day windows · Codex Extra/credits · reset countdowns · model health mascots · PIN-encrypted tokens · web control panel · screen carousel with 7-day charts, Anthropic news & clock (✨ Dust, v3.1)*
 
 </div>
 
 ---
 
-A standalone desk gadget that polls the Anthropic API and shows your Claude Code rate-limit usage in real time — no computer, no app, no cloud. Flash it, connect it to WiFi from your phone, and it just sits there telling you how much runway you have left.
+A standalone desk gadget that polls Anthropic and (optionally) ChatGPT/Codex and shows your subscription rate-limit usage in real time — no computer, no app, no cloud. Flash it, connect it to WiFi from your phone, and it just sits there telling you how much runway you have left.
+
+Codex is optional: paste a Codex CLI `refresh_token` (`rt.…` from `~/.codex/auth.json`) in the web panel. Claude-only setups stay unchanged.
 
 ## What it does
 
 **On every board**
 
-- **Live usage bars** — the 5-hour and 7-day rate-limit windows, read straight from the `anthropic-ratelimit-unified-*` headers, refreshed every 30 s – 5 min
+- **Live usage bars** — Claude 5-hour and 7-day windows from the `anthropic-ratelimit-unified-*` headers, refreshed every 30 s – 5 min
+- **Codex screens (Dust)** — matching 5-hour / 7-day bars plus Extra Usage credits, a separate 7-day chart, teal header so it is obvious which provider you are looking at
 - **Reset countdowns** — exactly how long until each window frees up
 - **Model health mascots** — Haiku / Sonnet / Opus / Fable from status.claude.com as blinking Clawds (Mango v2+)
 - **PIN-encrypted token** — AES-256-GCM on the device's own flash; the PIN is never stored, and 10 wrong tries wipes it

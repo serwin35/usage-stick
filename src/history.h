@@ -20,9 +20,12 @@ struct HistSlot {
 
 void historyInit();                          // mount LittleFS (format on first boot), load ring
 void historyRecord(const UsageData& u);      // call after each successful fetch
+void historyRecordCodex(float h5, float d7); // Codex 5h/7d ring (separate file)
 bool historySlotAdvancedTake();              // true once per new slot (chart redraw hint)
+bool historySlotAdvancedTakeCodex();
 // Fills out[HIST_SLOTS] oldest→newest; newestEpoch = end of the newest slot.
 void historySnapshot(HistSlot* out, uint32_t& newestEpoch);
+void historySnapshotCodex(HistSlot* out, uint32_t& newestEpoch);
 void historyErase();                         // wipe ring + file (factory reset)
 #ifdef PANEL_DEBUG
 void historySeedDemo(bool clear);            // synthetic 7 days (or clear) for testing

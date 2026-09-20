@@ -1,5 +1,7 @@
 #pragma once
+#include "config.h"
 #include "api.h"
+#include "codex.h"
 #include "settings.h"
 #ifdef MANGO_UI
 #include "status.h"
@@ -14,5 +16,7 @@ extern UsageData     g_usage;
 extern ModelStatus   g_models;
 #endif
 extern char          g_token[256];      // decrypted OAuth token, RAM only
+extern char          g_codexCred[CODEX_REFRESH_MAX];
+extern CodexUsage    g_codex;
 extern bool          g_unlocked;        // PIN accepted (buttons or web)
 extern unsigned long g_lastFetchMs;

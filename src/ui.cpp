@@ -292,10 +292,22 @@ void uiDashboardClock(const UsageData& data, unsigned long lastFetchMs, int rssi
 #define C_OK      0x07E0
 #define C_WARN    0xFD20
 #define C_CRIT    0xF800
+#if defined(BOARD_WT32_SC01_PLUS)
+// This panel's color reproduction skews the usual 0xEB87 toward yellow; picked
+// against a physical head-to-head swatch comparison on the actual hardware —
+// see src/colorpick_main.cpp. 0xFD20 is 24-bit #FFA500.
+#define C_HEAD    0xFD20
+#define C_ACCENT  0xFD20
+#define C_HEAD_DK 0xAB40   // dimmed to match, same ~68% scale as the default C_HEAD_DK
+#else
 #define C_HEAD    0xEB87   // Claude orange
 #define C_ACCENT  0xEB87
-#define C_CYAN    0xF50A   // light warm orange
 #define C_HEAD_DK 0xA244   // dimmed Claude orange — empty wifi bars, hairline dividers
+#endif
+#define C_CYAN    0xF50A   // light warm orange
+#define C_CODEX   0x2E97   // Usage4Claude teal #2DD4BF
+#define C_CODEX_DK 0x231C  // 7-day Codex blue #2563EB
+static uint16_t s_hdrBand = C_HEAD;
 
 // The base layout is designed for the ~240x135 LCD. Larger panels scale the
 // coordinates and font up so text stays readable and the layout fills the screen.
@@ -305,7 +317,7 @@ void uiDashboardClock(const UsageData& data, unsigned long lastFetchMs, int rssi
   #define TS(n) ((n) * 2)
   #define SX(n) ((n) * 2)
   #define SY(n) ((n) * 2)
-#elif defined(BOARD_CROWPANEL_ADV_35)
+#elif defined(BOARD_CROWPANEL_ADV_35) || defined(BOARD_WT32_SC01_PLUS)
   // 480x320 panel — 2x font, with coordinates stretched to fill the whole screen
   // (~2x across, ~2.37x down) so the dashboard spreads over the full height
   // instead of bunching up at the top.
@@ -318,7 +330,7 @@ void uiDashboardClock(const UsageData& data, unsigned long lastFetchMs, int rssi
   #define SY(n) (n)
 #endif
 
-#if defined(BOARD_CROWPANEL_ADV_35) || defined(DUST_UI)
+#if defined(BOARD_CROWPANEL_ADV_35) || defined(BOARD_WT32_SC01_PLUS) || defined(DUST_UI)
 // The CrowPanel's ILI9488 is too slow to clear-then-redraw on screen without flicker,
 // and the T-Display S3's v3 screen carousel would flash on every transition.
 // The dashboard (and the S3's other screens) render into an off-screen sprite (PSRAM)
@@ -432,7 +444,7 @@ void uiSetModelMask(uint8_t mask) { s_mdlMask = mask & 0x0F ? mask & 0x0F : 0x0F
 
 template <class GFX>
 static void drawHeaderLeft(GFX& g) {
-    g.setTextColor(C_TEXT, C_HEAD);
+    g.setTextColor(C_TEXT, s_hdrBand);
     g.setTextSize(1);
     g.setCursor(4, 5);
     g.printf(HDR_LEFT_FMT, (s_hdrShowUrl && s_netUrl[0]) ? s_netUrl : s_hdrLabel);
@@ -493,10 +505,26 @@ static void drawMascot(GFX& g, int x, int y, int W, int rh, uint16_t color, bool
 // drawStatusPanel() is the board-specific entry point either way, so uiDashboard
 // just calls it.
 
-#ifdef BOARD_TDISPLAY_S3
-// ── T-Display S3: reset row below the bars + four labelled Clawds ───────────
+#if defined(BOARD_TDISPLAY_S3) || defined(BOARD_WT32_SC01_PLUS)
+// ── Big screens: reset row below the bars + four labelled Clawds ────────────
 // Reset countdowns get their own row under the bars; the "MODELS" divider and
 // the four mascots — each named, each blinking when healthy — fill what's left.
+// T-Display S3 (320x170) and WT32-SC01 Plus (480x320) each get their own hand-
+// tuned absolute-pixel constants (not run through SX/SY — those macros scale
+// against Clarity's 240x135 reference frame, which the bars above also use via
+// their own SX/SY calls; mixing the two frames for these numbers is what caused
+// the reset row to land inside the 7-day bar in the first pass). Confirmed on
+// hardware below the real, rendered bottom of the 7-day bar.
+#if defined(BOARD_WT32_SC01_PLUS)
+#define RESET_CAP_Y     185
+#define RESET_VAL_Y     203
+#define MASCOT_W        50                // smaller than a naive 1.5x scale-up — less cartoonish
+#define MASCOT_RH       7
+#define MASCOT_Y        242
+#define MASCOT_SPACING  100
+#define MASCOT_CX0      90
+#define MASCOT_NAME_Y   285
+#else
 #define RESET_CAP_Y     80
 #define RESET_VAL_Y     92
 #define MASCOT_W        44                // fractional ~2.4px cells via mascotEdge
@@ -505,6 +533,7 @@ static void drawMascot(GFX& g, int x, int y, int W, int rh, uint16_t color, bool
 #define MASCOT_SPACING  80
 #define MASCOT_CX0      40
 #define MASCOT_NAME_Y   156
+#endif
 #define MASCOT_CX(i) (MASCOT_CX0 + (i) * MASCOT_SPACING)
 #define MASCOT_X(i)  (MASCOT_CX(i) - MASCOT_W / 2)
 
@@ -525,20 +554,20 @@ static int mascotLayout(int idx[4], int cx[4]) {
 template <class GFX>
 static void drawResetValues(GFX& g, const char* h5rst, const char* d7rst) {
     g.setTextColor(C_TEXT, C_BG);
-    g.setTextSize(2);
-    g.setCursor(10, RESET_VAL_Y);
+    g.setTextSize(TS(2));
+    g.setCursor(SX(10), RESET_VAL_Y);
     g.printf("%-8s", h5rst);
-    g.setCursor(SCREEN_W / 2 + 10, RESET_VAL_Y);
+    g.setCursor(SCREEN_W / 2 + SX(10), RESET_VAL_Y);
     g.printf("%-8s", d7rst);
 }
 
 template <class GFX>
 static void drawResetRow(GFX& g, const char* h5rst, const char* d7rst) {
     g.setTextColor(C_DIM, C_BG);
-    g.setTextSize(1);
-    g.setCursor(10, RESET_CAP_Y);
+    g.setTextSize(TS(1));
+    g.setCursor(SX(10), RESET_CAP_Y);
     g.print("5H RESET");
-    g.setCursor(SCREEN_W / 2 + 10, RESET_CAP_Y);
+    g.setCursor(SCREEN_W / 2 + SX(10), RESET_CAP_Y);
     g.print("7D RESET");
     drawResetValues(g, h5rst, d7rst);
 }
@@ -558,8 +587,8 @@ static void drawStatusPanel(GFX& g) {
         uint16_t col = (!s_modelStatus.ok || dead) ? C_DIM : C_HEAD;
         drawMascot(g, cx[k] - MASCOT_W / 2, MASCOT_Y, MASCOT_W, MASCOT_RH, col, dead);
         g.setTextColor(C_DIM, C_BG);
-        g.setTextSize(1);
-        g.setCursor(cx[k] - (int)strlen(names[i]) * 3, MASCOT_NAME_Y);
+        g.setTextSize(TS(1));
+        g.setCursor(cx[k] - (int)strlen(names[i]) * TS(3), MASCOT_NAME_Y);
         g.print(names[i]);
     }
 }
@@ -681,7 +710,7 @@ void uiBlinkTick(bool closed) {
     }
     UI_PUSH_DASH();
 }
-#endif // BOARD_TDISPLAY_S3 four-mascot row vs M5StickC Plus status panel
+#endif // big-screen four-mascot row vs M5StickC Plus status panel
 
 template <class GFX>
 static void drawWifiIcon(GFX& g, int x, int rssi) {
@@ -697,7 +726,7 @@ static void drawWifiIcon(GFX& g, int x, int rssi) {
 // derivable from its arguments.
 template <class GFX>
 static void drawHeaderRight(GFX& g, int rssi, unsigned long ago, int batPct) {
-    g.setTextColor(C_TEXT, C_HEAD);
+    g.setTextColor(C_TEXT, s_hdrBand);
     g.setTextSize(1);
 
     char ps[8];
@@ -731,26 +760,30 @@ static void drawHeaderRight(GFX& g, int rssi, unsigned long ago, int batPct) {
 void uiHeaderAlternate() { s_hdrShowUrl = !s_hdrShowUrl; }
 
 template <class GFX>
-static void drawScreenHeader(GFX& g, unsigned long lastFetchMs, int rssi) {
-    g.fillRect(0, 0, SCREEN_W, 18, C_HEAD);
+static void drawScreenHeader(GFX& g, unsigned long lastFetchMs, int rssi, uint16_t head = C_HEAD) {
+    s_hdrBand = head;
+    g.fillRect(0, 0, SCREEN_W, 18, head);
     drawHeaderLeft(g);
     drawHeaderRight(g, rssi, (millis() - lastFetchMs) / 1000, halBatPercent());
 }
 
 void uiChartScreen(const HistSlot* slots, uint32_t newestEpoch,
-                   unsigned long lastFetchMs, int rssi) {
+                   unsigned long lastFetchMs, int rssi, bool codex) {
     auto& g = dashTarget();
     g.fillSprite(C_BG);
-    drawScreenHeader(g, lastFetchMs, rssi);
+    const uint16_t head = codex ? C_CODEX : C_HEAD;
+    const uint16_t c5   = codex ? C_CODEX : C_HEAD;
+    const uint16_t c7   = codex ? C_CODEX_DK : C_HEAD_DK;
+    drawScreenHeader(g, lastFetchMs, rssi, head);
 
     g.setTextSize(1);
     g.setTextColor(C_DIM, C_BG);
     g.setCursor(10, 22);
-    g.print("7-DAY USAGE");
-    g.setTextColor(C_HEAD, C_BG);
+    g.print(codex ? "CODEX 7-DAY" : "7-DAY USAGE");
+    g.setTextColor(c5, C_BG);
     g.setCursor(SCREEN_W - 10 - 6 * 6, 22);
     g.print("5H");
-    g.setTextColor(C_HEAD_DK, C_BG);
+    g.setTextColor(c7, C_BG);
     g.setCursor(SCREEN_W - 10 - 2 * 6, 22);
     g.print("7D");
 
@@ -810,8 +843,8 @@ void uiChartScreen(const HistSlot* slots, uint32_t newestEpoch,
             prevX = x; prevY = y; has = true;
         }
     };
-    plotLine(false, C_HEAD_DK);
-    plotLine(true, C_HEAD);
+    plotLine(false, c7);
+    plotLine(true, c5);
 
     UI_PUSH_DASH();
 }
@@ -853,6 +886,10 @@ void uiNewsScreen(const NewsState& news, unsigned long lastFetchMs, int rssi) {
     const int perLine = (SCREEN_W - 20) / 6;
 #ifdef BOARD_TDISPLAY_S3
     const int itemY0 = 36, dateDy = 22, sepDy = 32, step = 38;
+#elif defined(BOARD_WT32_SC01_PLUS)
+    // 480x320 — text stays size 1 (unscaled) but gets generous vertical room;
+    // revisit if it looks too sparse once seen on hardware.
+    const int itemY0 = 54, dateDy = 28, sepDy = 40, step = 64;
 #else
     const int itemY0 = 32, dateDy = 20, sepDy = 29, step = 32;   // 240x135
 #endif
@@ -884,6 +921,114 @@ void uiNewsScreen(const NewsState& news, unsigned long lastFetchMs, int rssi) {
     UI_PUSH_DASH();
 }
 
+void uiCalendarScreen(const CalState& cal, unsigned long lastFetchMs, int rssi) {
+    auto& g = dashTarget();
+    g.fillSprite(C_BG);
+    drawScreenHeader(g, lastFetchMs, rssi);
+
+    g.setTextSize(1);
+    g.setTextColor(C_DIM, C_BG);
+    g.setCursor(10, 22);
+    g.print("CALENDAR");
+
+    char note[20] = "";
+    if (!cal.configured)              strlcpy(note, "no URL set", sizeof(note));
+    else if (cal.fetchedAtEpoch == 0) strlcpy(note, cal.ok ? "" : "fetching...", sizeof(note));
+    else if (!cal.ok)                 strlcpy(note, "offline", sizeof(note));
+    else if ((uint32_t)time(nullptr) - cal.fetchedAtEpoch > 3 * 3600)
+                                      strlcpy(note, "stale", sizeof(note));
+    if (note[0]) {
+        g.setTextColor(C_WARN, C_BG);
+        g.setCursor(SCREEN_W - 10 - (int)strlen(note) * 6, 22);
+        g.print(note);
+    }
+
+    if (!cal.configured || cal.count == 0) {
+        static const char* l1 = "paste the secret iCal URL";
+        static const char* l2 = "into the web panel";
+        static const char* l3 = "nothing in the next 30 days";
+        const char* a = cal.configured ? l3 : l1;
+        const char* b = cal.configured ? nullptr : l2;
+        g.setTextColor(C_DIM, C_BG);
+        g.setCursor((SCREEN_W - (int)strlen(a) * 6) / 2, SCREEN_H / 2 - 8);
+        g.print(a);
+        if (b) {
+            g.setCursor((SCREEN_W - (int)strlen(b) * 6) / 2, SCREEN_H / 2 + 6);
+            g.print(b);
+        }
+        UI_PUSH_DASH();
+        return;
+    }
+
+#ifdef BOARD_TDISPLAY_S3
+    const int itemY0 = 38, step = 22;
+#elif defined(BOARD_WT32_SC01_PLUS)
+    const int itemY0 = 54, step = 42;
+#else
+    const int itemY0 = 32, step = 18;   // 240x135
+#endif
+    // A fixed-width "when" column keeps the titles aligned; the title gets
+    // whatever is left of the row.
+    const int whenChars = 13;
+    const int titleX    = 10 + whenChars * 6 + 6;
+    const int titleMax  = (SCREEN_W - titleX - 6) / 6;
+
+    static const char* WD[7] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+    static const char* MO[12] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+
+    time_t nowT = time(nullptr);
+    struct tm nowTm;
+    localtime_r(&nowT, &nowTm);
+
+    int y = itemY0;
+    for (uint8_t i = 0; i < cal.count && y + step <= SCREEN_H; i++) {
+        const CalEvent& ev = cal.items[i];
+        time_t st = (time_t)ev.startEpoch;
+        struct tm t;
+        localtime_r(&st, &t);
+
+        // Only "is it today / tomorrow" matters; anything further prints its
+        // date, so a whole-year rollover (at most one, the horizon is 30 days)
+        // is all this has to get right.
+        int dayDelta;
+        if (t.tm_year == nowTm.tm_year) {
+            dayDelta = t.tm_yday - nowTm.tm_yday;
+        } else {
+            int yr = nowTm.tm_year + 1900;
+            int daysThisYear = (yr % 4 == 0 && (yr % 100 != 0 || yr % 400 == 0)) ? 366 : 365;
+            dayDelta = (daysThisYear - nowTm.tm_yday) + t.tm_yday;
+        }
+
+        char when[24];
+        if (ev.allDay) {
+            if (dayDelta <= 0)      strlcpy(when, "today  all-day", sizeof(when));
+            else if (dayDelta == 1) strlcpy(when, "tomo   all-day", sizeof(when));
+            else snprintf(when, sizeof(when), "%s %d %s", WD[t.tm_wday], t.tm_mday, MO[t.tm_mon]);
+        } else {
+            if (dayDelta <= 0)      snprintf(when, sizeof(when), "today  %02d:%02d", t.tm_hour, t.tm_min);
+            else if (dayDelta == 1) snprintf(when, sizeof(when), "tomo   %02d:%02d", t.tm_hour, t.tm_min);
+            else snprintf(when, sizeof(when), "%s %d %02d:%02d",
+                          WD[t.tm_wday], t.tm_mday, t.tm_hour, t.tm_min);
+        }
+
+        // Today's events lead in the accent colour so "what's next" pops.
+        g.setTextColor(dayDelta <= 0 ? C_HEAD : C_HEAD_DK, C_BG);
+        g.setCursor(10, y);
+        g.print(when);
+
+        g.setTextColor(C_TEXT, C_BG);
+        g.setCursor(titleX, y);
+        for (int c = 0; c < titleMax && ev.title[c]; c++) g.print(ev.title[c]);
+
+        if (i + 1 < cal.count && y + step * 2 <= SCREEN_H)
+            g.drawFastHLine(10, y + step - 8, SCREEN_W - 20, C_BAR_BG);
+        y += step;
+    }
+
+    UI_PUSH_DASH();
+}
+
 void uiClockScreen(const UsageData& data, unsigned long lastFetchMs, int rssi) {
     auto& g = dashTarget();
     g.fillSprite(C_BG);
@@ -906,6 +1051,8 @@ void uiClockScreen(const UsageData& data, unsigned long lastFetchMs, int rssi) {
 
 #ifdef BOARD_TDISPLAY_S3
     const int tSz = 5, tY = 44, dY = 96, barY = 140, barW = 84, bar1X = 14, bar2X = 170;
+#elif defined(BOARD_WT32_SC01_PLUS)
+    const int tSz = 8, tY = 83, dY = 181, barY = 264, barW = 126, bar1X = 21, bar2X = 255;
 #else
     const int tSz = 4, tY = 38, dY = 82, barY = 116, barW = 56, bar1X = 8, bar2X = 124;
 #endif
@@ -940,6 +1087,91 @@ void uiClockScreen(const UsageData& data, unsigned long lastFetchMs, int rssi) {
     microBar(bar1X, "5H", data.h5);
     microBar(bar2X, "7D", data.d7);
 
+    UI_PUSH_DASH();
+}
+
+void uiCodexDashboard(const CodexUsage& data, unsigned long lastFetchMs, int rssi) {
+    auto& g = dashTarget();
+    g.fillSprite(C_BG);
+
+    s_hdrBand = C_CODEX;
+    g.fillRect(0, 0, SCREEN_W, SY(18), C_CODEX);
+    drawHeaderLeft(g);
+    drawHeaderRight(g, rssi, (millis() - lastFetchMs) / 1000, halBatPercent());
+
+    if (!data.configured) {
+        g.setTextColor(C_DIM, C_BG);
+        g.setTextSize(TS(1));
+        g.setCursor(SX(10), SY(40));
+        g.print("CODEX");
+        g.setCursor(SX(10), SY(58));
+        g.print("paste a Codex CLI refresh");
+        g.setCursor(SX(10), SY(70));
+        g.print("token (rt....) in the panel");
+        UI_PUSH_DASH();
+        return;
+    }
+
+    if (!data.ok) {
+        g.setTextColor(C_CRIT, C_BG);
+        g.setTextSize(TS(2));
+        g.setCursor(SX(10), SY(35));
+        g.print("CODEX ERR");
+        g.setTextSize(TS(1));
+        g.setTextColor(C_DIM, C_BG);
+        g.setCursor(SX(10), SY(60));
+        g.print(data.error);
+        UI_PUSH_DASH();
+        return;
+    }
+
+    int barW = SCREEN_W - SX(20);
+    char h5rst[16], d7rst[16];
+    fmtCountdown(data.h5ResetEpoch, h5rst, sizeof(h5rst));
+    fmtCountdown(data.d7ResetEpoch, d7rst, sizeof(d7rst));
+
+    float h5 = data.hasH5 ? data.h5 : 0;
+    float d7 = data.hasD7 ? data.d7 : 0;
+#if defined(BOARD_TDISPLAY_S3) || defined(BOARD_WT32_SC01_PLUS)
+    drawBar(g, SX(10), SY(24), barW, SY(10), h5, data.hasH5 ? "CODEX 5-HOUR" : "CODEX 5H --");
+    drawBar(g, SX(10), SY(52), barW, SY(10), d7, data.hasD7 ? "CODEX 7-DAY"  : "CODEX 7D --");
+    drawResetRow(g, h5rst, d7rst);
+#else
+    drawBar(g, SX(10), SY(24), barW, SY(10), h5, "CX 5H", h5rst);
+    drawBar(g, SX(10), SY(52), barW, SY(10), d7, "CX 7D", d7rst);
+#endif
+
+    g.setTextSize(TS(1));
+    g.setTextColor(C_DIM, C_BG);
+#ifdef BOARD_TDISPLAY_S3
+    int extraY = 122;
+#elif defined(BOARD_WT32_SC01_PLUS)
+    int extraY = 230;
+#else
+    int extraY = 88;
+#endif
+    g.setCursor(SX(10), extraY);
+    g.print("EXTRA / CREDITS");
+    g.setTextColor(C_TEXT, C_BG);
+    g.setCursor(SX(10), extraY + SY(12));
+    if (data.unlimited) {
+        g.print("unlimited");
+    } else if (data.exhausted) {
+        g.setTextColor(C_CRIT, C_BG);
+        g.print("exhausted");
+    } else if (data.hasCredits) {
+        char buf[24];
+        if (data.creditBalance < 1 && data.creditBalance > 0)
+            strlcpy(buf, "<1", sizeof(buf));
+        else if (data.creditBalance < 1000)
+            snprintf(buf, sizeof(buf), "%.0f", data.creditBalance);
+        else
+            snprintf(buf, sizeof(buf), "%.1fk", data.creditBalance / 1000.0f);
+        g.print(buf);
+    } else {
+        g.setTextColor(C_DIM, C_BG);
+        g.print("none");
+    }
     UI_PUSH_DASH();
 }
 #endif // DUST_UI carousel screens
@@ -1028,7 +1260,7 @@ void uiSetupScreen(const char* apName, const char* apPass, bool reconfigure) {
 }
 
 void uiPinScreen(int pos, const int digits[4]) {
-#ifdef BOARD_CROWPANEL_ADV_35
+#if defined(BOARD_CROWPANEL_ADV_35) || defined(BOARD_WT32_SC01_PLUS)
     auto& g = dashTarget();
     g.fillSprite(C_BG);
 #else
@@ -1046,17 +1278,18 @@ void uiPinScreen(int pos, const int digits[4]) {
 
 #ifdef MANGO_UI
     // Same dress code as the dashboard: orange header band + Clawd standing guard.
-    // Label/hint/note positions hang off boxY so the block stays centered on both
-    // the 320x170 (S3) and 240x135 (M5StickC Plus) panels.
-    g.fillRect(0, 0, SCREEN_W, 18, C_HEAD);
-    g.setTextColor(C_TEXT, C_HEAD);
-    g.setTextSize(1);
-    g.setCursor(4, 5);
+    // Label/hint/note positions hang off boxY so the block stays centered on the
+    // 320x170 (S3), 240x135 (M5StickC Plus) and 480x320 (WT32-SC01 Plus) panels —
+    // SX/SY/TS are identity on the first two, so this is a no-op there.
+    g.fillRect(0, 0, SCREEN_W, SY(18), C_HEAD);
+    g.setTextColor(C_TEXT, s_hdrBand);
+    g.setTextSize(TS(1));
+    g.setCursor(SX(4), SY(5));
     g.print("CLAUDE USAGE");
-    g.setCursor(SCREEN_W - 4 - 6 * 6, 5);
+    g.setCursor(SCREEN_W - SX(4) - (int)strlen("LOCKED") * TS(6), SY(5));
     g.print("LOCKED");
     g.setTextColor(C_DIM, C_BG);
-    g.setCursor((SCREEN_W - 10 * 6) / 2, boxY - 18);
+    g.setCursor((SCREEN_W - (int)strlen("UNLOCK PIN") * TS(6)) / 2, boxY - SY(18));
     g.print("UNLOCK PIN");
 #else
     g.setTextColor(C_DIM, C_BG);
@@ -1085,7 +1318,7 @@ void uiPinScreen(int pos, const int digits[4]) {
     }
 
 #ifdef MANGO_UI
-    const int hintY = boxY + boxH + 12;   // just below the centered boxes
+    const int hintY = boxY + boxH + SY(12);   // just below the centered boxes
 #else
     const int hintY = SY(95);
 #endif
@@ -1102,7 +1335,7 @@ void uiPinScreen(int pos, const int digits[4]) {
     g.setTextColor(0x4A49, C_BG);
     g.print("short tap = A    long press = B");
     halFlush();
-#elif defined(BOARD_CROWPANEL_ADV_35)
+#elif defined(BOARD_CROWPANEL_ADV_35) || defined(BOARD_WT32_SC01_PLUS)
     // Touch HMI — stack the hints vertically; the side-by-side layout overflows at this scale.
     g.print("tap LEFT  = next digit");
     g.setCursor(SX(20), SY(110));
@@ -1119,7 +1352,7 @@ void uiPinScreen(int pos, const int digits[4]) {
     } else {
         int bandY = SY(38), bandH = SY(42);
         lcd.pushImage(0, bandY, SCREEN_W, bandH,
-                      (uint16_t*)s_dash.getPointer() + (size_t)bandY * SCREEN_W);
+                      (uint16_t*)s_dash.frameBuffer(0) + (size_t)bandY * SCREEN_W);
     }
 #else
 #ifdef MANGO_UI
@@ -1170,7 +1403,7 @@ void uiConnecting(const char* ssid, int attempt) {
 }
 
 void uiDashboard(const UsageData& data, unsigned long lastFetchMs, int rssi, int batPct) {
-#if defined(BOARD_CROWPANEL_ADV_35) || defined(DUST_UI)
+#if defined(BOARD_CROWPANEL_ADV_35) || defined(BOARD_WT32_SC01_PLUS) || defined(DUST_UI)
     auto& g = dashTarget();
     g.fillSprite(C_BG);
 #else
@@ -1179,11 +1412,12 @@ void uiDashboard(const UsageData& data, unsigned long lastFetchMs, int rssi, int
 #endif
 
     // Header
+    s_hdrBand = C_HEAD;
     g.fillRect(0, 0, SCREEN_W, SY(18), C_HEAD);
 #ifdef DUST_UI
     drawHeaderLeft(g);
 #else
-    g.setTextColor(C_TEXT, C_HEAD);
+    g.setTextColor(C_TEXT, s_hdrBand);
     g.setTextSize(TS(1));
     g.setCursor(SX(4), SY(5));
     g.print("CLAUDE USAGE");
@@ -1225,7 +1459,7 @@ void uiDashboard(const UsageData& data, unsigned long lastFetchMs, int rssi, int
     fmtCountdown(data.d7ResetEpoch, d7rst, sizeof(d7rst));
 
 #ifdef MANGO_UI
-#ifdef BOARD_TDISPLAY_S3
+#if defined(BOARD_TDISPLAY_S3) || defined(BOARD_WT32_SC01_PLUS)
     // Tier L: % flush-right on the bar rows; the countdowns get their own
     // size-2 row below the bars.
     drawBar(g, SX(10), SY(24), barW, SY(10), data.h5, "5-HOUR");
@@ -1269,7 +1503,7 @@ void uiDashboard(const UsageData& data, unsigned long lastFetchMs, int rssi, int
 
 void uiDashboardClock(const UsageData& data, unsigned long lastFetchMs, int rssi) {
     if (!data.ok) return;   // error layout is owned by the full uiDashboard
-#if defined(BOARD_CROWPANEL_ADV_35) || defined(DUST_UI)
+#if defined(BOARD_CROWPANEL_ADV_35) || defined(BOARD_WT32_SC01_PLUS) || defined(DUST_UI)
     auto& g = dashTarget();   // update the retained sprite, then push it once
 #else
     auto& g = lcd;
@@ -1283,7 +1517,7 @@ void uiDashboardClock(const UsageData& data, unsigned long lastFetchMs, int rssi
     drawHeaderLeft(g);
 #endif
     g.fillRect(SCREEN_W / 2, 0, SCREEN_W / 2, SY(18), C_HEAD);
-    g.setTextColor(C_TEXT, C_HEAD);
+    g.setTextColor(C_TEXT, s_hdrBand);
     g.setTextSize(TS(1));
 #ifdef MANGO_UI
     drawHeaderRight(g, rssi, ago, halBatPercent());
@@ -1299,7 +1533,7 @@ void uiDashboardClock(const UsageData& data, unsigned long lastFetchMs, int rssi
     fmtCountdown(data.h5ResetEpoch, h5rst, sizeof(h5rst));
     fmtCountdown(data.d7ResetEpoch, d7rst, sizeof(d7rst));
 #ifdef MANGO_UI
-#ifdef BOARD_TDISPLAY_S3
+#if defined(BOARD_TDISPLAY_S3) || defined(BOARD_WT32_SC01_PLUS)
     // Tier L: the countdowns live on their own row below the bars.
     drawResetValues(g, h5rst, d7rst);
 #else

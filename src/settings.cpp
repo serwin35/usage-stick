@@ -27,9 +27,11 @@ void settingsLoad(Settings& s) {
     s.uiMode     = constrain(prefs.getUChar("ui_mode", 0), 0, 2);
     s.dwellS     = prefs.getUChar("dwell_s", 10);
     if (s.dwellS != 5 && s.dwellS != 10 && s.dwellS != 15 && s.dwellS != 30) s.dwellS = 10;
-    s.scrMask    = prefs.getUChar("scr_mask", 0x07) & 0x0F;
+    s.scrMask    = prefs.getUChar("scr_mask", 0x07) & 0x7F;
     if (s.scrMask == 0) s.scrMask = 0x01;   // carousel can never be empty
     s.mdlMask    = prefs.getUChar("mdl_mask", 0x0F) & 0x0F;
+    prefs.getString("ical_url", s.icalUrl, sizeof(s.icalUrl));
+    s.hasCodexBlob = prefs.getBytes("cblob", &s.codexBlob, sizeof(s.codexBlob)) == sizeof(s.codexBlob);
     prefs.end();
 }
 
@@ -54,6 +56,12 @@ void settingsPutStr(const char* key, const char* v) {
 void settingsPutBlob(const char* key, const void* data, size_t len) {
     prefs.begin(NVS_NAMESPACE, false);
     prefs.putBytes(key, data, len);
+    prefs.end();
+}
+
+void settingsRemove(const char* key) {
+    prefs.begin(NVS_NAMESPACE, false);
+    prefs.remove(key);
     prefs.end();
 }
 

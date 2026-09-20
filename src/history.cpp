@@ -9,7 +9,8 @@
 // NTP sanity floor: epochs below this mean the clock isn't set and slot math
 // would poison the ring.
 static const uint32_t TIME_SANE_EPOCH = 1700000000UL;
-static const char*    HIST_PATH       = "/history.bin";
+static const char*    HIST_PATH        = "/history.bin";
+static const char*    HIST_CODEX_PATH  = "/codex_hist.bin";
 
 struct HistFile {
     uint32_t magic;         // 'CUH1'
@@ -22,26 +23,41 @@ static const uint32_t HIST_MAGIC   = 0x31485543;   // "CUH1" little-endian
 static const uint16_t HIST_VERSION = 1;
 
 static HistFile s_hist;
+static HistFile s_codex;
 static bool     s_fsOk         = false;
 static bool     s_slotAdvanced = false;
+static bool     s_codexAdvanced = false;
 
-static void clearRing() {
-    memset(s_hist.ring, HIST_EMPTY, sizeof(s_hist.ring));
-    s_hist.lastAbsSlot = 0;
+static void clearRingOf(HistFile& h) {
+    memset(h.ring, HIST_EMPTY, sizeof(h.ring));
+    h.lastAbsSlot = 0;
 }
 
-static void persist() {
+static void persistTo(const char* path, const HistFile& h) {
     if (!s_fsOk) return;
-    File f = LittleFS.open(HIST_PATH, "w");
+    File f = LittleFS.open(path, "w");
     if (!f) return;
-    f.write((const uint8_t*)&s_hist, sizeof(s_hist));
+    f.write((const uint8_t*)&h, sizeof(h));
     f.close();
+}
+
+static void loadRing(const char* path, HistFile& h) {
+    File f = LittleFS.open(path, "r");
+    if (!f) return;
+    HistFile onDisk;
+    bool ok = f.read((uint8_t*)&onDisk, sizeof(onDisk)) == sizeof(onDisk) &&
+              onDisk.magic == HIST_MAGIC && onDisk.version == HIST_VERSION;
+    f.close();
+    if (ok) h = onDisk;
 }
 
 void historyInit() {
     s_hist.magic   = HIST_MAGIC;
     s_hist.version = HIST_VERSION;
-    clearRing();
+    s_codex.magic   = HIST_MAGIC;
+    s_codex.version = HIST_VERSION;
+    clearRingOf(s_hist);
+    clearRingOf(s_codex);
 
     // The data partition is labeled "spiffs" in the table; LittleFS mounts it
     // fine (that label is arduino-esp32's default, passed explicitly to make
@@ -49,46 +65,47 @@ void historyInit() {
     s_fsOk = LittleFS.begin(true, "/littlefs", 10, "spiffs");
     if (!s_fsOk) return;
 
-    File f = LittleFS.open(HIST_PATH, "r");
-    if (!f) return;
-    HistFile onDisk;
-    bool ok = f.read((uint8_t*)&onDisk, sizeof(onDisk)) == sizeof(onDisk) &&
-              onDisk.magic == HIST_MAGIC && onDisk.version == HIST_VERSION;
-    f.close();
-    if (ok) s_hist = onDisk;
+    loadRing(HIST_PATH, s_hist);
+    loadRing(HIST_CODEX_PATH, s_codex);
 }
 
-void historyRecord(const UsageData& u) {
-    if (!u.ok) return;
+static void recordInto(HistFile& h, bool& advanced, const char* path, float h5, float d7) {
     uint32_t now = (uint32_t)time(nullptr);
     if (now < TIME_SANE_EPOCH) return;
 
     uint32_t absSlot = now / HIST_SLOT_SEC;
-    if (s_hist.lastAbsSlot == 0) {
-        clearRing();
-    } else if (absSlot > s_hist.lastAbsSlot) {
-        // Blank everything skipped while the device was off/failing so old
-        // wrap-around samples can't masquerade as fresh ones.
-        uint32_t gap = absSlot - s_hist.lastAbsSlot;
+    if (h.lastAbsSlot == 0) {
+        clearRingOf(h);
+    } else if (absSlot > h.lastAbsSlot) {
+        uint32_t gap = absSlot - h.lastAbsSlot;
         if (gap >= HIST_SLOTS) {
-            clearRing();
+            clearRingOf(h);
         } else {
-            for (uint32_t s = s_hist.lastAbsSlot + 1; s <= absSlot; s++) {
-                s_hist.ring[s % HIST_SLOTS].h5 = HIST_EMPTY;
-                s_hist.ring[s % HIST_SLOTS].d7 = HIST_EMPTY;
+            for (uint32_t s = h.lastAbsSlot + 1; s <= absSlot; s++) {
+                h.ring[s % HIST_SLOTS].h5 = HIST_EMPTY;
+                h.ring[s % HIST_SLOTS].d7 = HIST_EMPTY;
             }
         }
     }
 
-    HistSlot& slot = s_hist.ring[absSlot % HIST_SLOTS];
-    slot.h5 = (uint8_t)constrain((int)(u.h5 + 0.5f), 0, 100);
-    slot.d7 = (uint8_t)constrain((int)(u.d7 + 0.5f), 0, 100);
+    HistSlot& slot = h.ring[absSlot % HIST_SLOTS];
+    slot.h5 = (uint8_t)constrain((int)(h5 + 0.5f), 0, 100);
+    slot.d7 = (uint8_t)constrain((int)(d7 + 0.5f), 0, 100);
 
-    if (absSlot != s_hist.lastAbsSlot) {
-        s_hist.lastAbsSlot = absSlot;
-        s_slotAdvanced = true;
-        persist();
+    if (absSlot != h.lastAbsSlot) {
+        h.lastAbsSlot = absSlot;
+        advanced = true;
+        persistTo(path, h);
     }
+}
+
+void historyRecord(const UsageData& u) {
+    if (!u.ok) return;
+    recordInto(s_hist, s_slotAdvanced, HIST_PATH, u.h5, u.d7);
+}
+
+void historyRecordCodex(float h5, float d7) {
+    recordInto(s_codex, s_codexAdvanced, HIST_CODEX_PATH, h5, d7);
 }
 
 bool historySlotAdvancedTake() {
@@ -97,26 +114,45 @@ bool historySlotAdvancedTake() {
     return r;
 }
 
-void historySnapshot(HistSlot* out, uint32_t& newestEpoch) {
+bool historySlotAdvancedTakeCodex() {
+    bool r = s_codexAdvanced;
+    s_codexAdvanced = false;
+    return r;
+}
+
+static void snapshotOf(const HistFile& h, HistSlot* out, uint32_t& newestEpoch) {
     uint32_t now = (uint32_t)time(nullptr);
-    uint32_t nowAbs = (now >= TIME_SANE_EPOCH) ? now / HIST_SLOT_SEC : s_hist.lastAbsSlot;
-    if (nowAbs == 0) nowAbs = HIST_SLOTS;   // nothing recorded and no clock: all-empty window
+    uint32_t nowAbs = (now >= TIME_SANE_EPOCH) ? now / HIST_SLOT_SEC : h.lastAbsSlot;
+    if (nowAbs == 0) nowAbs = HIST_SLOTS;
     newestEpoch = (nowAbs + 1) * HIST_SLOT_SEC;
 
     for (uint16_t i = 0; i < HIST_SLOTS; i++) {
         uint32_t absSlot = nowAbs - (HIST_SLOTS - 1) + i;
-        bool valid = s_hist.lastAbsSlot != 0 &&
-                     absSlot <= s_hist.lastAbsSlot &&
-                     absSlot + HIST_SLOTS > s_hist.lastAbsSlot;
-        out[i] = valid ? s_hist.ring[absSlot % HIST_SLOTS]
+        bool valid = h.lastAbsSlot != 0 &&
+                     absSlot <= h.lastAbsSlot &&
+                     absSlot + HIST_SLOTS > h.lastAbsSlot;
+        out[i] = valid ? h.ring[absSlot % HIST_SLOTS]
                        : HistSlot{HIST_EMPTY, HIST_EMPTY};
     }
 }
 
+void historySnapshot(HistSlot* out, uint32_t& newestEpoch) {
+    snapshotOf(s_hist, out, newestEpoch);
+}
+
+void historySnapshotCodex(HistSlot* out, uint32_t& newestEpoch) {
+    snapshotOf(s_codex, out, newestEpoch);
+}
+
 void historyErase() {
-    clearRing();
+    clearRingOf(s_hist);
+    clearRingOf(s_codex);
     s_slotAdvanced = false;
-    if (s_fsOk) LittleFS.remove(HIST_PATH);
+    s_codexAdvanced = false;
+    if (s_fsOk) {
+        LittleFS.remove(HIST_PATH);
+        LittleFS.remove(HIST_CODEX_PATH);
+    }
 }
 
 #ifdef PANEL_DEBUG
@@ -124,6 +160,7 @@ void historySeedDemo(bool clear) {
     if (clear) {
         historyErase();
         s_slotAdvanced = true;
+        s_codexAdvanced = true;
         return;
     }
     uint32_t now = (uint32_t)time(nullptr);
@@ -144,7 +181,7 @@ void historySeedDemo(bool clear) {
     }
     s_hist.lastAbsSlot = nowAbs;
     s_slotAdvanced = true;
-    persist();
+    persistTo(HIST_PATH, s_hist);
 }
 #endif
 

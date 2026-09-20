@@ -21,6 +21,12 @@
   #include <Wire.h>
   #include <TAMC_GT911.h>
   extern TFT_eSPI lcd;
+#elif defined(BOARD_WT32_SC01_PLUS)
+  // Not TFT_eSPI — see src/lgfx_wt32_sc01_plus.h for why. That header pulls in
+  // LovyanGFX and aliases TFT_eSPI/TFT_eSprite to it via LGFX_TFT_eSPI.hpp, so the
+  // rest of this codebase (ui.cpp included) doesn't need to know the difference.
+  #include "lgfx_wt32_sc01_plus.h"
+  extern TFT_eSPI lcd;
 #elif defined(BOARD_TDISPLAY_S3_AMOLED)
   #include <LilyGo_AMOLED.h>
   #include <TFT_eSPI.h>
@@ -48,3 +54,9 @@ int  halBatPercent();
 void halSetBrightness(uint8_t level);
 void halFlush();
 void halClear(uint16_t color);
+
+#ifdef BOARD_WT32_SC01_PLUS
+// Short alert tone through the onboard I2S amp — the only board in this repo
+// with a speaker. Blocks for the duration of the tone (~150ms).
+void halBeep();
+#endif

@@ -21,6 +21,12 @@ struct Settings {
     uint8_t       dwellS;       // u8, carousel dwell: 5/10/15/30 s
     uint8_t       scrMask;      // u8, carousel screen set (bit per Screen)
     uint8_t       mdlMask;      // u8, which model mascots render (bit per model)
+    EncryptedBlob codexBlob;
+    bool          hasCodexBlob;
+    // Google Calendar "secret address in iCal format". Plaintext in NVS, like
+    // wifipass — it grants read-only sight of the calendar, and encrypting it
+    // under the PIN would make the calendar screen unavailable while locked.
+    char          icalUrl[200];
 };
 
 bool settingsIsProvisioned();
@@ -29,6 +35,7 @@ void settingsPutInt(const char* key, int32_t v);
 void settingsPutU8(const char* key, uint8_t v);
 void settingsPutStr(const char* key, const char* v);
 void settingsPutBlob(const char* key, const void* data, size_t len);
+void settingsRemove(const char* key);
 void settingsWipeAll();
 
 // Sets the process TZ from an east-of-UTC minute offset. POSIX inverts the

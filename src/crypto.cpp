@@ -5,6 +5,32 @@
 #include "esp_system.h"
 #include <string.h>
 
+static uint8_t s_sessionKey[32];
+static bool    s_sessionKeySet = false;
+
+static bool gcmEncrypt(const uint8_t* key, const char* plaintext, EncryptedBlob& blob) {
+    size_t ptLen = strlen(plaintext);
+    if (ptLen > sizeof(blob.ciphertext)) return false;
+
+    esp_efuse_mac_get_default(blob.salt);
+    esp_fill_random(blob.iv, sizeof(blob.iv));
+
+    mbedtls_gcm_context gcm;
+    mbedtls_gcm_init(&gcm);
+    mbedtls_gcm_setkey(&gcm, MBEDTLS_CIPHER_ID_AES, key, 256);
+    int ret = mbedtls_gcm_crypt_and_tag(
+        &gcm, MBEDTLS_GCM_ENCRYPT, ptLen,
+        blob.iv, sizeof(blob.iv),
+        NULL, 0,
+        (const uint8_t*)plaintext,
+        blob.ciphertext,
+        sizeof(blob.tag), blob.tag
+    );
+    mbedtls_gcm_free(&gcm);
+    blob.len = (uint16_t)ptLen;
+    return ret == 0;
+}
+
 void deriveKey(const char* pin, const uint8_t* salt, size_t saltLen, uint8_t* keyOut32) {
     mbedtls_sha256_context ctx;
     mbedtls_sha256_init(&ctx);
@@ -26,32 +52,17 @@ void deriveKey(const char* pin, const uint8_t* salt, size_t saltLen, uint8_t* ke
 }
 
 bool encryptToken(const char* plaintext, const char* pin, EncryptedBlob& blob) {
-    size_t ptLen = strlen(plaintext);
-    if (ptLen > sizeof(blob.ciphertext)) return false;
-
-    esp_efuse_mac_get_default(blob.salt);
-    esp_fill_random(blob.iv, sizeof(blob.iv));
-
+    uint8_t salt[6];
+    esp_efuse_mac_get_default(salt);
     uint8_t key[32];
-    deriveKey(pin, blob.salt, sizeof(blob.salt), key);
-
-    mbedtls_gcm_context gcm;
-    mbedtls_gcm_init(&gcm);
-    mbedtls_gcm_setkey(&gcm, MBEDTLS_CIPHER_ID_AES, key, 256);
-
-    int ret = mbedtls_gcm_crypt_and_tag(
-        &gcm, MBEDTLS_GCM_ENCRYPT, ptLen,
-        blob.iv, sizeof(blob.iv),
-        NULL, 0,
-        (const uint8_t*)plaintext,
-        blob.ciphertext,
-        sizeof(blob.tag), blob.tag
-    );
-
-    mbedtls_gcm_free(&gcm);
+    deriveKey(pin, salt, sizeof(salt), key);
+    bool ok = gcmEncrypt(key, plaintext, blob);
+    if (ok) {
+        memcpy(s_sessionKey, key, 32);
+        s_sessionKeySet = true;
+    }
     memset(key, 0, sizeof(key));
-    blob.len = ptLen;
-    return (ret == 0);
+    return ok;
 }
 
 bool decryptToken(const EncryptedBlob& blob, const char* pin, char* plainOut, size_t plainMaxLen) {
@@ -74,9 +85,19 @@ bool decryptToken(const EncryptedBlob& blob, const char* pin, char* plainOut, si
     );
 
     mbedtls_gcm_free(&gcm);
-    memset(key, 0, sizeof(key));
 
-    if (ret != 0) return false;
+    if (ret != 0) {
+        memset(key, 0, sizeof(key));
+        return false;
+    }
+    memcpy(s_sessionKey, key, 32);
+    s_sessionKeySet = true;
+    memset(key, 0, sizeof(key));
     plainOut[blob.len] = '\0';
     return true;
+}
+
+bool recryptToken(const char* plaintext, EncryptedBlob& blob) {
+    if (!s_sessionKeySet) return false;
+    return gcmEncrypt(s_sessionKey, plaintext, blob);
 }

@@ -198,6 +198,26 @@
     <button class="ghost" id="btnRefresh">Refresh now</button>
   </section>
 
+  <section class="card wide">
+    <h2>Codex usage</h2>
+    <div class="screenish" style="border-color:#0d9488">
+      <div class="bar-row">
+        <div class="bar-cap"><span>CODEX 5-HOUR</span><span id="cxh5pct">--%</span></div>
+        <div class="bar"><i id="cxh5bar" style="background:#2dd4bf"></i></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-cap"><span>CODEX 7-DAY</span><span id="cxd7pct">--%</span></div>
+        <div class="bar"><i id="cxd7bar" style="background:#2563eb"></i></div>
+      </div>
+      <div class="resets">
+        <div>5H RESET<b id="cxh5rst">--</b></div>
+        <div>7D RESET<b id="cxd7rst">--</b></div>
+        <div style="margin-left:auto;text-align:right">CREDITS<b id="cxcred">--</b></div>
+      </div>
+    </div>
+    <div class="status" id="codexStatus"></div>
+  </section>
+
   <section class="card">
     <h2>Device</h2>
     <dl class="kv">
@@ -258,6 +278,9 @@
       <label><input type="checkbox" data-bit="1">7-day chart</label>
       <label><input type="checkbox" data-bit="2">News</label>
       <label><input type="checkbox" data-bit="3">Clock</label>
+      <label><input type="checkbox" data-bit="4">Calendar</label>
+      <label><input type="checkbox" data-bit="5">Codex</label>
+      <label><input type="checkbox" data-bit="6">Codex chart</label>
     </div>
     <label>Model mascots shown</label>
     <div class="checks" id="mdlChecks">
@@ -282,8 +305,35 @@
   </section>
 
   <section class="card wide">
+    <h2>Codex 7-day history</h2>
+    <div class="screenish">
+      <canvas id="codexHistCanvas" style="width:100%;height:180px;display:block"></canvas>
+    </div>
+    <div class="status" id="codexHistStatus"></div>
+    <button class="ghost" id="btnCodexHist">Reload chart</button>
+  </section>
+
+  <section class="card wide">
     <h2>Anthropic news</h2>
     <ul class="news" id="newsList"><li class="muted">Not fetched yet.</li></ul>
+  </section>
+
+  <section class="card">
+    <h2>Calendar</h2>
+    <p class="faint" style="margin:0 0 6px">Google Calendar &rarr; Settings &rarr; Integrate
+       calendar &rarr; <em>Secret address in iCal format</em>. Anyone with that link can read
+       the calendar, so it is stored write-only here and never shown again.</p>
+    <label for="inIcal">Secret iCal URL</label>
+    <input id="inIcal" type="password" maxlength="199" autocomplete="off"
+           placeholder="https://calendar.google.com/calendar/ical/.../basic.ics">
+    <div class="row2">
+      <button id="btnIcal">Save URL</button>
+      <button class="ghost" id="btnIcalClear">Remove</button>
+    </div>
+    <div class="status" id="icalStatus"></div>
+    <p class="faint" style="margin:6px 0 0">Shows the next
+       <span id="calCount">0</span> events. Repeating events are expanded for daily and
+       weekly rules only; monthly and yearly ones are skipped.</p>
   </section>
 
   <section class="card">
@@ -299,6 +349,26 @@
     <br>
     <button id="btnToken">Replace token</button>
     <div class="status" id="tokStatus"></div>
+  </section>
+
+  <section class="card">
+    <h2>Codex token</h2>
+    <p class="faint" style="margin:0 0 6px">Optional. Paste the Codex CLI
+       <code>refresh_token</code> from <code>~/.codex/auth.json</code>
+       (starts with <code>rt.</code>). Same 4-digit PIN encrypts it. ChatGPT
+       session cookies only fit if they are under 512 characters.</p>
+    <label for="inCodexToken">Refresh token</label>
+    <input id="inCodexToken" type="password" maxlength="511" autocomplete="off"
+           placeholder="rt....">
+    <label for="inCodexPin">Confirm with PIN</label>
+    <input id="inCodexPin" class="pin" type="password" inputmode="numeric"
+           pattern="\d{4}" maxlength="4" autocomplete="off" placeholder="····">
+    <div class="row2">
+      <button id="btnCodexToken">Save Codex token</button>
+      <button class="ghost" id="btnCodexClear">Remove</button>
+    </div>
+    <div class="status" id="codexTokStatus"></div>
+    <p class="faint" id="codexTokHint" style="margin:6px 0 0"></p>
   </section>
 
   <section class="card">
@@ -463,6 +533,19 @@ function render(s) {
   $('usageStatus').className = u.ok ? 'status' : 'status err';
   renderModels(s.models);
 
+  const cx = s.codex || {};
+  const cxOn = !!cx.configured;
+  $('cxh5pct').textContent = (cx.ok && cx.has_h5) ? cx.h5.toFixed(0) + '%' : '--%';
+  $('cxd7pct').textContent = (cx.ok && cx.has_d7) ? cx.d7.toFixed(0) + '%' : '--%';
+  $('cxh5bar').style.width = (cx.ok && cx.has_h5) ? Math.min(cx.h5, 100) + '%' : 0;
+  $('cxd7bar').style.width = (cx.ok && cx.has_d7) ? Math.min(cx.d7, 100) + '%' : 0;
+  $('cxh5rst').textContent = fmtCountdown(cx.h5_reset, s.now);
+  $('cxd7rst').textContent = fmtCountdown(cx.d7_reset, s.now);
+  $('cxcred').textContent = !cxOn ? 'not set' : cx.unlimited ? 'unlimited' : cx.exhausted ? 'exhausted' :
+    (cx.has_credits ? (cx.credits < 1 && cx.credits > 0 ? '<1' : String(Math.round(cx.credits))) : 'none');
+  $('codexStatus').textContent = !cxOn ? 'No Codex token stored.' : cx.ok ? '' : 'fetch error: ' + (cx.error || 'unknown');
+  $('codexStatus').className = (!cxOn || cx.ok) ? 'status' : 'status err';
+
   $('dFw').textContent = 'v' + s.fw + ' (' + s.codename + ')';
   $('dHost').textContent = s.hostname + '.local';
   $('dIp').textContent = s.ip;
@@ -481,12 +564,22 @@ function render(s) {
     $('selDwell').value = c.dwell_s ?? 10;
     maskSet('scrChecks', c.scr_mask ?? 7);
     maskSet('mdlChecks', c.mdl_mask ?? 15);
+    $('inIcal').placeholder = c.ical_set
+      ? '•••••••• (saved — type a new URL to replace)'
+      : 'https://calendar.google.com/calendar/ical/.../basic.ics';
+    $('codexTokHint').textContent = c.codex_set
+      ? 'A Codex token is stored (write-only).'
+      : 'No Codex token yet — Claude-only until you add one.';
   }
+
+  const cal = s.calendar || {};
+  $('calCount').textContent = cal.count || 0;
 
   if (!render.extrasLoaded) {
     render.extrasLoaded = true;
     loadHistory();
     loadNews();
+    loadCodexHistory();
   }
 }
 
@@ -544,6 +637,61 @@ function loadHistory() {
   }).catch(x => toast('histStatus', x.message));
 }
 $('btnHist').onclick = loadHistory;
+
+function loadCodexHistory() {
+  api('/api/codex-history').then(h => {
+    const cv = $('codexHistCanvas');
+    const W = cv.clientWidth || 660, H = 180;
+    cv.width = W * devicePixelRatio; cv.height = H * devicePixelRatio;
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+    const css = getComputedStyle(document.documentElement);
+    const col = n => css.getPropertyValue(n).trim();
+    const px0 = 30, px1 = W - 8, py0 = 8, py1 = H - 18;
+    ctx.clearRect(0, 0, W, H);
+    ctx.font = '10px ' + col('--font-mono');
+    for (const p of [0, 50, 100]) {
+      const y = py1 - (py1 - py0) * p / 100;
+      ctx.strokeStyle = col('--line-soft'); ctx.beginPath();
+      ctx.moveTo(px0, y); ctx.lineTo(px1, y); ctx.stroke();
+      ctx.fillStyle = col('--text-faint');
+      ctx.fillText(p, 4, y + 3);
+    }
+    const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    const n = h.h5.length;
+    let prevDay = -1;
+    for (let i = 0; i < n; i++) {
+      const d = new Date((h.newest_epoch - (n - i) * h.slot_sec) * 1000);
+      if (prevDay >= 0 && d.getDay() !== prevDay) {
+        const x = px0 + (px1 - px0) * i / (n - 1);
+        ctx.strokeStyle = col('--line-soft'); ctx.beginPath();
+        ctx.moveTo(x, py0); ctx.lineTo(x, py1); ctx.stroke();
+        ctx.fillStyle = col('--text-faint');
+        ctx.fillText(days[d.getDay()], x - 3, H - 6);
+      }
+      prevDay = d.getDay();
+    }
+    const plot = (arr, color, width) => {
+      ctx.strokeStyle = color; ctx.lineWidth = width; ctx.beginPath();
+      let pen = false;
+      for (let i = 0; i < n; i++) {
+        if (arr[i] == null) { pen = false; continue; }
+        const x = px0 + (px1 - px0) * i / (n - 1);
+        const y = py1 - (py1 - py0) * arr[i] / 100;
+        pen ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+        pen = true;
+      }
+      ctx.stroke(); ctx.lineWidth = 1;
+    };
+    plot(h.d7, '#2563eb', 1.5);
+    plot(h.h5, '#2dd4bf', 2);
+    const any = h.h5.some(v => v != null);
+    $('codexHistStatus').textContent = any ? '' : 'No Codex samples yet — add a token and leave the stick on.';
+    $('codexHistStatus').className = 'status';
+  }).catch(x => toast('codexHistStatus', x.message));
+}
+$('btnCodexHist').onclick = loadCodexHistory;
 
 /* ── news ── */
 function loadNews() {
@@ -611,6 +759,23 @@ $('btnScreens').onclick = () => {
     .catch(x => toast('scrStatus', x.message));
 };
 
+$('btnIcal').onclick = () => {
+  const url = $('inIcal').value.trim();
+  if (!url.startsWith('https://')) return toast('icalStatus', 'Paste the https:// iCal link.');
+  api('/api/settings', { ical_url: url }).then(() => {
+    $('inIcal').value = '';
+    dirty = false;
+    toast('icalStatus', 'Saved. Fetching the calendar…', true);
+  }).catch(x => toast('icalStatus', x.message));
+};
+
+$('btnIcalClear').onclick = () =>
+  api('/api/settings', { ical_url: '' }).then(() => {
+    $('inIcal').value = '';
+    dirty = false;
+    toast('icalStatus', 'Removed.', true);
+  }).catch(x => toast('icalStatus', x.message));
+
 $('btnToken').onclick = () => {
   const token = $('inToken').value.trim(), pin = $('inTokenPin').value;
   if (!token || pin.length !== 4) return toast('tokStatus', 'Token and 4-digit PIN required.');
@@ -623,6 +788,33 @@ $('btnToken').onclick = () => {
       : 'Token saved, but the probe failed: ' + (r.error || 'unknown') + '.', r.probe_ok);
   }).catch(x => toast('tokStatus', x.code === 403 ? 'Wrong PIN — token unchanged.' : x.message))
     .finally(() => $('btnToken').disabled = false);
+};
+
+$('btnCodexToken').onclick = () => {
+  const token = $('inCodexToken').value.trim(), pin = $('inCodexPin').value;
+  if (!token || pin.length !== 4) return toast('codexTokStatus', 'Token and 4-digit PIN required.');
+  $('btnCodexToken').disabled = true;
+  toast('codexTokStatus', 'Encrypting and probing Codex…', true);
+  api('/api/codex-token', { token, pin }).then(r => {
+    $('inCodexToken').value = ''; $('inCodexPin').value = '';
+    toast('codexTokStatus', r.probe_ok
+      ? 'Codex token saved and verified.'
+      : 'Saved, but the probe failed: ' + (r.error || 'unknown') + '.', r.probe_ok);
+    render.extrasLoaded = false;
+    poll();
+  }).catch(x => toast('codexTokStatus', x.code === 403 ? 'Wrong PIN — token unchanged.' : x.message))
+    .finally(() => $('btnCodexToken').disabled = false);
+};
+
+$('btnCodexClear').onclick = () => {
+  const pin = $('inCodexPin').value;
+  if (pin.length !== 4) return toast('codexTokStatus', 'Enter the PIN to remove the Codex token.');
+  if (!confirm('Remove the stored Codex token?')) return;
+  api('/api/codex-token', { token: '', pin }).then(() => {
+    $('inCodexToken').value = ''; $('inCodexPin').value = '';
+    toast('codexTokStatus', 'Codex token removed.', true);
+    poll();
+  }).catch(x => toast('codexTokStatus', x.code === 403 ? 'Wrong PIN.' : x.message));
 };
 
 $('btnScan').onclick = function tryScan() {

@@ -17,6 +17,8 @@
 #include "ui.h"
 #include "history.h"
 #include "news.h"
+#include "calendar.h"
+#include "codex.h"
 #include "panel_html.h"
 
 // ── Handler rules (single-threaded reentrancy contract) ──────────────────
@@ -167,6 +169,9 @@ static void handleLogin() {
     // so the GCM tag is the only oracle (crypto.cpp).
     bool ok = pinValid(pin) && g_settings.hasBlob &&
               decryptToken(g_settings.blob, pin, tmp, sizeof(tmp));
+    g_codexCred[0] = '\0';
+    if (ok && g_settings.hasCodexBlob)
+        decryptToken(g_settings.codexBlob, pin, g_codexCred, sizeof(g_codexCred));
     memset(pin, 0, sizeof(pin));
 
     if (!ok) {
@@ -241,6 +246,21 @@ static void handleState() {
     u["d7_reset"] = g_usage.d7ResetEpoch;
     u["age_s"]    = (millis() - g_lastFetchMs) / 1000;
 
+    JsonObject cx = d["codex"].to<JsonObject>();
+    cx["configured"] = g_settings.hasCodexBlob || g_codexCred[0];
+    cx["ok"]         = g_codex.ok;
+    cx["error"]      = g_codex.error;
+    cx["h5"]         = g_codex.h5;
+    cx["d7"]         = g_codex.d7;
+    cx["h5_reset"]   = g_codex.h5ResetEpoch;
+    cx["d7_reset"]   = g_codex.d7ResetEpoch;
+    cx["has_h5"]     = g_codex.hasH5;
+    cx["has_d7"]     = g_codex.hasD7;
+    cx["has_credits"]= g_codex.hasCredits;
+    cx["unlimited"]  = g_codex.unlimited;
+    cx["exhausted"]  = g_codex.exhausted;
+    cx["credits"]    = g_codex.creditBalance;
+
     JsonObject m = d["models"].to<JsonObject>();
     m["haiku"]  = g_models.haikuUp;
     m["sonnet"] = g_models.sonnetUp;
@@ -258,11 +278,19 @@ static void handleState() {
     c["dwell_s"]    = g_settings.dwellS;
     c["scr_mask"]   = g_settings.scrMask;
     c["mdl_mask"]   = g_settings.mdlMask;
+    c["ical_set"]   = g_settings.icalUrl[0] != '\0';
+    c["codex_set"]  = g_settings.hasCodexBlob;
 
     JsonObject nw = d["news"].to<JsonObject>();
     nw["count"]         = g_news.count;
     nw["fetched_epoch"] = g_news.fetchedAtEpoch;
     nw["ok"]            = g_news.ok;
+
+    JsonObject cal = d["calendar"].to<JsonObject>();
+    cal["count"]         = g_cal.count;
+    cal["fetched_epoch"] = g_cal.fetchedAtEpoch;
+    cal["ok"]            = g_cal.ok;
+    cal["configured"]    = g_cal.configured;
 
     sendJson(200, d);
 }
@@ -321,10 +349,23 @@ static void handleSettings() {
         applied["dwell_s"] = g_settings.dwellS;
     }
     if (body["scr_mask"].is<int>()) {
-        uint8_t m = body["scr_mask"].as<int>() & 0x0F;
+        uint8_t m = body["scr_mask"].as<int>() & 0x7F;
         g_settings.scrMask = m ? m : 0x01;         // carousel can never be empty
         settingsPutU8("scr_mask", g_settings.scrMask);
         applied["scr_mask"] = g_settings.scrMask;
+    }
+    if (body["ical_url"].is<const char*>()) {
+        const char* u = body["ical_url"] | "";
+        // Empty clears it; anything else must be an https:// URL that fits.
+        if (!u[0] || (!strncmp(u, "https://", 8) && strlen(u) < sizeof(g_settings.icalUrl))) {
+            strlcpy(g_settings.icalUrl, u, sizeof(g_settings.icalUrl));
+            settingsPutStr("ical_url", g_settings.icalUrl);
+            calendarInvalidate();                  // refetch on the next loop pass
+            applied["ical_set"] = g_settings.icalUrl[0] != '\0';
+        } else {
+            sendErr(400, "ical_url must be an https:// URL");
+            return;
+        }
     }
     if (body["mdl_mask"].is<int>()) {
         uint8_t m = body["mdl_mask"].as<int>() & 0x0F;
@@ -344,6 +385,31 @@ static void handleHistory() {
     historySnapshot(slots, newest);
 
     // Hand-built JSON: 2×336 numbers would bloat an ArduinoJson doc for no gain.
+    String out;
+    out.reserve(HIST_SLOTS * 9 + 96);
+    out += "{\"slot_sec\":1800,\"newest_epoch\":";
+    out += newest;
+    out += ",\"h5\":[";
+    for (int i = 0; i < HIST_SLOTS; i++) {
+        if (i) out += ',';
+        if (slots[i].h5 == HIST_EMPTY) out += "null";
+        else out += (int)slots[i].h5;
+    }
+    out += "],\"d7\":[";
+    for (int i = 0; i < HIST_SLOTS; i++) {
+        if (i) out += ',';
+        if (slots[i].d7 == HIST_EMPTY) out += "null";
+        else out += (int)slots[i].d7;
+    }
+    out += "]}";
+    s_server.send(200, "application/json", out);
+}
+
+static void handleCodexHistory() {
+    if (!requireAuth()) return;
+    static HistSlot slots[HIST_SLOTS];
+    uint32_t newest;
+    historySnapshotCodex(slots, newest);
     String out;
     out.reserve(HIST_SLOTS * 9 + 96);
     out += "{\"slot_sec\":1800,\"newest_epoch\":";
@@ -461,6 +527,84 @@ static void handleToken() {
     sendJson(200, d);
 }
 
+static void handleCodexToken() {
+    if (!requireAuth()) return;
+    JsonDocument body;
+    if (!requireJsonBody(body)) return;
+
+    uint32_t retryS;
+    if (throttled(retryS)) {
+        s_server.sendHeader("Retry-After", String(retryS));
+        sendErr(429, "throttled");
+        return;
+    }
+
+    const char* token = body["token"] | "";
+    char pin[8];
+    strlcpy(pin, body["pin"] | "", sizeof(pin));
+    bool clearing = token[0] == '\0';
+    if ((!clearing && (strlen(token) < 8 || strlen(token) > CODEX_REFRESH_MAX - 1)) || !pinValid(pin)) {
+        memset(pin, 0, sizeof(pin));
+        sendErr(400, "bad_request");
+        return;
+    }
+
+    char tmp[256];
+    bool pinOk = g_settings.hasBlob && decryptToken(g_settings.blob, pin, tmp, sizeof(tmp));
+    memset(tmp, 0, sizeof(tmp));
+    if (!pinOk) {
+        throttleFail();
+        memset(pin, 0, sizeof(pin));
+        sendErr(403, "wrong_pin");
+        return;
+    }
+    s_fails = 0;
+
+    if (clearing) {
+        memset(pin, 0, sizeof(pin));
+        settingsRemove("cblob");
+        memset(&g_settings.codexBlob, 0, sizeof(g_settings.codexBlob));
+        g_settings.hasCodexBlob = false;
+        memset(g_codexCred, 0, sizeof(g_codexCred));
+        memset(&g_codex, 0, sizeof(g_codex));
+        strlcpy(g_codex.error, "no_codex_token", sizeof(g_codex.error));
+        s_actions |= PANEL_ACT_REDRAW;
+        JsonDocument d;
+        d["cleared"] = true;
+        sendJson(200, d);
+        return;
+    }
+
+    EncryptedBlob nb;
+    bool enc = encryptToken(token, pin, nb);
+    memset(pin, 0, sizeof(pin));
+    if (!enc) {
+        sendErr(500, "encrypt_failed");
+        return;
+    }
+
+    settingsPutBlob("cblob", &nb, sizeof(nb));
+    g_settings.codexBlob    = nb;
+    g_settings.hasCodexBlob = true;
+    strlcpy(g_codexCred, token, sizeof(g_codexCred));
+
+    fetchCodexUsage(g_codexCred, sizeof(g_codexCred), g_codex);
+    if (g_codex.ok) historyRecordCodex(g_codex.hasH5 ? g_codex.h5 : 0,
+                                       g_codex.hasD7 ? g_codex.d7 : 0);
+    if (g_codex.credRotated && recryptToken(g_codexCred, nb)) {
+        settingsPutBlob("cblob", &nb, sizeof(nb));
+        g_settings.codexBlob = nb;
+    }
+    g_lastFetchMs = millis();
+    s_actions |= PANEL_ACT_REDRAW;
+
+    JsonDocument d;
+    d["saved"]    = true;
+    d["probe_ok"] = g_codex.ok;
+    if (!g_codex.ok) d["error"] = g_codex.error;
+    sendJson(200, d);
+}
+
 static void handleWifiScan() {
     if (!requireAuth()) return;
     int n = WiFi.scanComplete();
@@ -547,10 +691,12 @@ void panelBegin(const char* hostname) {
     s_server.on("/api/settings", HTTP_POST, handleSettings);
     s_server.on("/api/refresh", HTTP_POST, handleRefresh);
     s_server.on("/api/token", HTTP_POST, handleToken);
+    s_server.on("/api/codex-token", HTTP_POST, handleCodexToken);
     s_server.on("/api/wifi/scan", HTTP_GET, handleWifiScan);
     s_server.on("/api/wifi", HTTP_POST, handleWifiSet);
     s_server.on("/api/reset", HTTP_POST, handleReset);
     s_server.on("/api/history", HTTP_GET, handleHistory);
+    s_server.on("/api/codex-history", HTTP_GET, handleCodexHistory);
     s_server.on("/api/news", HTTP_GET, handleNews);
 #ifdef PANEL_DEBUG
     s_server.on("/api/debug/seed-history", HTTP_POST, handleSeedHistory);

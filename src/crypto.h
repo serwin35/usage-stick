@@ -13,3 +13,6 @@ struct EncryptedBlob {
 void deriveKey(const char* pin, const uint8_t* salt, size_t saltLen, uint8_t* keyOut32);
 bool encryptToken(const char* plaintext, const char* pin, EncryptedBlob& blob);
 bool decryptToken(const EncryptedBlob& blob, const char* pin, char* plainOut, size_t plainMaxLen);
+// After a successful PIN decrypt, the KDF key stays in RAM so a rotated Codex
+// refresh_token can be re-encrypted without storing the PIN.
+bool recryptToken(const char* plaintext, EncryptedBlob& blob);

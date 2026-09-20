@@ -10,6 +10,8 @@
 #include "ui.h"
 #include "history.h"
 #include "news.h"
+#include "calendar.h"
+#include "codex.h"
 
 static Screen        s_current      = SCR_DASH;
 static unsigned long s_advanceAtMs  = 0;   // next auto-advance (carousel)
@@ -39,11 +41,14 @@ void screensShow(Screen s) {
             static HistSlot slots[HIST_SLOTS];   // 672B — off the stack
             uint32_t newest;
             historySnapshot(slots, newest);
-            uiChartScreen(slots, newest, g_lastFetchMs, WiFi.RSSI());
+            uiChartScreen(slots, newest, g_lastFetchMs, WiFi.RSSI(), false);
             break;
         }
         case SCR_NEWS:
             uiNewsScreen(g_news, g_lastFetchMs, WiFi.RSSI());
+            break;
+        case SCR_CAL:
+            uiCalendarScreen(g_cal, g_lastFetchMs, WiFi.RSSI());
             break;
         case SCR_CLOCK: {
             time_t now = time(nullptr);
@@ -51,6 +56,16 @@ void screensShow(Screen s) {
             localtime_r(&now, &t);
             s_clockMinute = t.tm_min;
             uiClockScreen(g_usage, g_lastFetchMs, WiFi.RSSI());
+            break;
+        }
+        case SCR_CODEX:
+            uiCodexDashboard(g_codex, g_lastFetchMs, WiFi.RSSI());
+            break;
+        case SCR_CODEX_CHART: {
+            static HistSlot slots[HIST_SLOTS];
+            uint32_t newest;
+            historySnapshotCodex(slots, newest);
+            uiChartScreen(slots, newest, g_lastFetchMs, WiFi.RSSI(), true);
             break;
         }
         default:
@@ -117,6 +132,12 @@ void screensOnData() {
         case SCR_CHART:
             if (historySlotAdvancedTake()) screensShow(SCR_CHART);
             break;
+        case SCR_CODEX:
+            screensShow(SCR_CODEX);
+            break;
+        case SCR_CODEX_CHART:
+            if (historySlotAdvancedTakeCodex()) screensShow(SCR_CODEX_CHART);
+            break;
         default:
             break;   // news doesn't depend on usage
     }
@@ -124,6 +145,10 @@ void screensOnData() {
 
 void screensOnNews() {
     if (s_current == SCR_NEWS) screensShow(SCR_NEWS);
+}
+
+void screensOnCalendar() {
+    if (s_current == SCR_CAL) screensShow(SCR_CAL);
 }
 
 void screensOnSettings() {

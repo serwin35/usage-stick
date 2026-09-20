@@ -1,7 +1,7 @@
 #pragma once
 
 // ── Firmware version ─────────────────────────────────────
-#define FW_VERSION              "3.0.3"  // Dust — shown on the boot screen
+#define FW_VERSION              "3.1.0"  // Dust — Claude + Codex usage screens
 
 // ── Polling ──────────────────────────────────────────────
 #define DEFAULT_POLL_SEC        120
@@ -38,6 +38,10 @@
   #define SCREEN_W              480
   #define SCREEN_H              320
   #define SCREEN_ROT            3
+#elif defined(BOARD_WT32_SC01_PLUS)
+  #define SCREEN_W              480
+  #define SCREEN_H              320
+  #define SCREEN_ROT            3   // TODO(hardware): verify — flip to 1 if the boot screen is upside down
 #else
   #define SCREEN_W              240
   #define SCREEN_H              135
@@ -49,6 +53,12 @@
 #define WIFI_CONNECT_TIMEOUT_S  20
 #define API_TIMEOUT_MS          15000
 #define MESSAGES_ENDPOINT       "https://api.anthropic.com/v1/messages"
+#define CODEX_USAGE_URL         "https://chatgpt.com/backend-api/wham/usage"
+#define CODEX_SESSION_URL       "https://chatgpt.com/api/auth/session"
+#define CODEX_OAUTH_TOKEN_URL   "https://auth.openai.com/oauth/token"
+#define CODEX_OAUTH_CLIENT_ID   "app_EMoamEEZ73f0CkXaXp7hrann"
+#define CODEX_REFRESH_MAX       512
+#define CODEX_ACCESS_MAX        3072
 #define ANTHROPIC_VERSION       "2023-06-01"
 #define PROBE_MODEL             "claude-haiku-4-5-20251001"
 // status.anthropic.com redirects here — query the canonical host directly
@@ -62,6 +72,15 @@
 #define NEWS_RETRY_SEC          1800     // failed fetch retries in 30min
 #define NEWS_MAX_ITEMS          5
 #define NEWS_TIMEOUT_MS         10000
+
+// ── Google Calendar (secret iCal URL, calendar screen) ───
+// The whole .ics has to be read (events aren't in date order), so this runs on
+// a slow cadence — each fetch blocks the loop for as long as it takes.
+#define CAL_MAX_ITEMS           6
+#define CAL_POLL_SEC            900      // refetch every 15min
+#define CAL_RETRY_SEC           300      // failed fetch retries in 5min
+#define CAL_TIMEOUT_MS          20000
+#define CAL_HORIZON_DAYS        30       // how far ahead repeats are expanded
 
 // ── NVS ──────────────────────────────────────────────────
 #define NVS_NAMESPACE           "claude"

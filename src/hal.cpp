@@ -373,6 +373,99 @@ void halFlush() {}
 
 void halClear(uint16_t color) { lcd.fillScreen(color); }
 
+#elif defined(BOARD_WT32_SC01_PLUS)
+
+// Wireless-Tag / Smart Panlee WT32-SC01 Plus (ESP32-S3, 480x320 IPS, ST7796UI over
+// 8-bit parallel). No physical buttons at all (not even a BOOT/RESET pair broken out
+// to the enclosure edge) — input is the FT6336U capacitive touch panel, split into two
+// zones exactly like the CrowPanel Advance 35 above: a tap on the LEFT half acts as
+// Button A (cycle digit / brightness), the RIGHT half as Button B (confirm / refresh).
+// The A+B factory-reset combo needs two simultaneous inputs and is unavailable here
+// (single touch point); re-flash to wipe NVS.
+//
+// lcd is the panel itself (see lgfx_wt32_sc01_plus.h — LovyanGFX under a TFT_eSPI-
+// compatible alias). Touch and backlight are handled by LovyanGFX's own panel/light
+// drivers, already wired up in that file, so there's no separate touch library or ledc
+// setup here — just lcd.getTouch()/lcd.setBrightness(). getTouch() already returns
+// coordinates in the current display rotation, so no manual axis-swap is needed (unlike
+// the CrowPanel's raw-GT911 handling above).
+//
+// The dashboard renders into a PSRAM sprite and is pushed in one transfer, matching the
+// CrowPanel's flicker-free approach (see ui.cpp); the PIN/setup screens draw straight to
+// the panel so touch input stays responsive.
+TFT_eSPI lcd;
+
+#define SC_W  480  // landscape width (mirrors SCREEN_W in config.h)
+
+static bool prevTouch = false;
+static bool tapA = false, tapB = false;
+static bool downA = false, downB = false;
+
+void halInit() {
+    lcd.init();
+    lcd.setBrightness(200);
+}
+
+void halUpdate() {
+    int32_t x, y;
+    bool down = lcd.getTouch(&x, &y);
+    if (down && !prevTouch) {                          // new finger press (rising edge)
+        if (x > (SC_W / 2)) { tapB = true; downB = true; downA = false; }  // right half
+        else                { tapA = true; downA = true; downB = false; }  // left half
+    }
+    if (!down) { downA = false; downB = false; }
+    prevTouch = down;
+}
+
+bool halBtnAWasPressed() { bool r = tapA; tapA = false; return r; }
+bool halBtnBWasPressed() { bool r = tapB; tapB = false; return r; }
+bool halBtnAIsPressed()  { return downA; }
+bool halBtnBIsPressed()  { return downB; }
+
+int halBatPercent() { return -1; }  // no battery-sense ADC on this board
+
+void halSetBrightness(uint8_t level) {
+    static const uint8_t vals[] = {0, 60, 160, 255};
+    lcd.setBrightness(vals[level]);
+}
+
+void halFlush() {}
+
+void halClear(uint16_t color) { lcd.fillScreen(color); }
+
+// I2S audio amplifier (Tab.7 in the datasheet): LRCK=GPIO35, BCLK=GPIO36, DOUT=GPIO37.
+// This platform's arduino-esp32 version only carries the older Sandeep Mistry <I2S.h>
+// library (a global `I2S` instance), not the newer ESP_I2S/I2SClass API — same one used
+// by that library's own SimpleTone example. A short sine beep, written one sample at a
+// time (Philips/I2S mode writes the same sample to both channels; this amp is mono).
+#include <I2S.h>
+#include <math.h>
+
+static bool s_i2sReady = false;
+
+static bool ensureI2S() {
+    if (s_i2sReady) return true;
+    I2S.setAllPins(/*sck=*/36, /*fs=*/35, /*sd=*/37, /*outSd=*/37, /*inSd=*/-1);
+    s_i2sReady = I2S.begin(I2S_PHILIPS_MODE, 16000, 16);
+    return s_i2sReady;
+}
+
+void halBeep() {
+    if (!ensureI2S()) return;
+
+    const int      sampleRate = 16000;
+    const int      freqHz     = 1500;
+    const int      amplitude  = 8000;
+    const unsigned durationMs = 150;
+    const unsigned nSamples   = sampleRate * durationMs / 1000;
+
+    for (unsigned i = 0; i < nSamples; i++) {
+        int16_t s = (int16_t)(amplitude * sinf(2.0f * (float)M_PI * freqHz * i / sampleRate));
+        I2S.write((int32_t)s);   // right
+        I2S.write((int32_t)s);   // left
+    }
+}
+
 #elif defined(BOARD_M5STICK_C_PLUS2)
 
 #define HOLD_PIN 4
